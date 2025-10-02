@@ -6,29 +6,30 @@ You need [Node.js](https://nodejs.org/), [Rust](https://www.rust-lang.org/), and
 
 The following assumes the root of this repo is the current working directory.
 
-To build the Rust engine, first move into the `lib` subdirectory and then use `cargo`:
+To build the Rust [`crypto` library](https://github.com/libernet-mirror/crypto), first move into the
+`crypto` subdirectory and use `cargo`:
 
 ```sh
-browser$ cd lib
-browser/lib$ cargo build --target wasm32-unknown-unknown --release
+browser$ cd crypto
+browser/crypto$ cargo build --target wasm32-unknown-unknown --release
 ```
 
 Optionally run the tests (**before** `cargo build`):
 
 ```sh
-browser/lib$ cargo test
+browser/crypto$ cargo test
 ```
 
 Then generate the JavaScript bindings:
 
 ```sh
-browser/lib$ wasm-bindgen target/wasm32-unknown-unknown/release/lib.wasm --out-dir ../lib-bindings/ --target bundler
+browser/crypto$ wasm-bindgen target/wasm32-unknown-unknown/release/crypto.wasm --out-dir ../crypto-bindings/ --target bundler
 ```
 
 Now you can move back to the root and run the full app:
 
 ```sh
-browser/lib$ cd ..
+browser/crypto$ cd ..
 browser$ npm start
 ```
 
