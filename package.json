@@ -25,6 +25,7 @@
     "@electron-forge/plugin-webpack": "^7.9.0",
     "@electron/fuses": "^1.8.0",
     "@tailwindcss/postcss": "^4.1.14",
+    "@tailwindcss/typography": "^0.5.19",
     "@types/node": "^24.6.2",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
@@ -46,8 +47,12 @@
     "typescript": "~4.5.4"
   },
   "dependencies": {
+    "@grpc/grpc-js": "^1.14.0",
+    "@grpc/proto-loader": "^0.8.0",
     "clsx": "^2.1.1",
     "electron-squirrel-startup": "^1.0.1",
+    "flowbite": "^3.1.2",
+    "pkijs": "^3.2.5",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   }
