@@ -16,8 +16,9 @@ if (require("electron-squirrel-startup")) {
 
 const createWindow = (): void => {
   const mainWindow = new BrowserWindow({
-    height: 600,
+    title: "Libernet",
     width: 800,
+    height: 600,
     webPreferences: {
       contextIsolation: true,
       devTools: false,
