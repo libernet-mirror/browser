@@ -48,7 +48,7 @@ export const Page = ({
             "mb-3 text-sm text-red-600 dark:text-red-500",
           )}
         >
-          invalid password!
+          Invalid password, please try again!
         </p>
         <div className="flex">
           <span className="grow"></span>

@@ -1,38 +1,19 @@
 import { useState } from "react";
 
-import { useAsyncEffect } from "./Utilities";
+import { ControlBar } from "./ControlBar";
 import { Page as WalletPage } from "./Wallet";
-import { Page as WalletLoginPage } from "./WalletLogin";
-import { Page as WalletSetupPage } from "./WalletSetup";
+import { libernet, useAsyncEffect } from "./Utilities";
 
 export const App = () => {
-  const [walletStatus, setWalletStatus] = useState<
-    null | "none" | "stored" | "loaded"
-  >(null);
+  const [view, setView] = useState<"control" | "system" | "web" | null>(null);
   useAsyncEffect(async () => {
-    setWalletStatus(await window.libernet.getWalletStatus());
+    setView(await libernet().getView());
   }, []);
-  switch (walletStatus) {
-    case "loaded":
+  switch (view) {
+    case "control":
+      return <ControlBar />;
+    case "system":
       return <WalletPage />;
-    case "stored":
-      return (
-        <WalletLoginPage
-          onSubmit={async (password) => {
-            try {
-              if (!(await window.libernet.loadWallet(password))) {
-                return false;
-              }
-            } catch {
-              return false;
-            }
-            setWalletStatus(await window.libernet.getWalletStatus());
-            return true;
-          }}
-        />
-      );
-    case "none":
-      return <WalletSetupPage />;
     default:
       return null;
   }

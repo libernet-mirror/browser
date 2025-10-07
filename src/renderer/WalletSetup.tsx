@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import { clsx } from "clsx";
 import { initTooltips } from "flowbite";
 
+import { libernet } from "./Utilities";
+
 const PasswordRow = ({
   index,
   password,
@@ -228,7 +230,7 @@ export const Page = () => {
           if (canSubmit) {
             setCreationInProgress(true);
             try {
-              await window.libernet.createWallet(
+              await libernet().createWallet(
                 passwords.map(({ password }) => password),
               );
             } finally {
