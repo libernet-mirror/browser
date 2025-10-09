@@ -5,10 +5,10 @@ import { libernet, useAsyncEffect } from "./Utilities";
 export const ControlBar = () => {
   const [url, setUrl] = useState("");
   const [typingUrl, setTypingUrl] = useState<string | null>(null);
-  const shownUrl = useMemo(() => typingUrl || url, [url, typingUrl]);
-  useAsyncEffect(async () => {
-    setUrl(await libernet().getUrl());
-  }, []);
+  const shownUrl = useMemo(
+    () => (typingUrl !== null ? typingUrl : url),
+    [url, typingUrl],
+  );
   useEffect(
     () =>
       libernet().onUrl((url: string) => {
@@ -16,6 +16,9 @@ export const ControlBar = () => {
       }),
     [],
   );
+  useAsyncEffect(async () => {
+    setUrl(await libernet().getUrl());
+  }, []);
   return (
     <div className="flex w-full gap-2 overflow-hidden px-2 py-1 shadow-sm">
       <div className="inline-flex rounded-md shadow-xs">
@@ -88,7 +91,7 @@ export const ControlBar = () => {
         <form
           onSubmit={async (e) => {
             e.preventDefault();
-            await libernet().setUrl(typingUrl);
+            await libernet().setUrl(typingUrl.trim());
             setTypingUrl(null);
           }}
         >
