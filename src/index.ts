@@ -202,14 +202,25 @@ app.on("activate", () => {
 // In this file you can include the rest of your app's specific main process code. You can also put
 // them in separate files and import them here.
 
+import { Libernet } from "./libernet";
 import { Mutex } from "./mutex";
 import { Wallet, WalletData } from "./wallet";
+
+const walletFileMutex = new Mutex();
+
+let _libernet: Libernet | null = null;
 
 function getWalletPath(): string {
   return path.join(app.getPath("userData"), "wallet.json");
 }
 
-const walletFileMutex = new Mutex();
+function libernet(): Libernet {
+  if (_libernet) {
+    return _libernet;
+  } else {
+    throw new Error("not connected");
+  }
+}
 
 ipcMain.handle("wallet/get-status", async () => {
   if (Wallet.isLoaded()) {
@@ -251,10 +262,19 @@ ipcMain.handle("wallet/load", async (_, password: string) => {
     JSON.parse(data) as WalletData,
     password,
   );
-  await wallet.getAccountByNumber(0);
+  const account = wallet.getAccountByNumber(0);
+  try {
+    _libernet = await Libernet.create(account);
+  } catch (error) {
+    console.error(error);
+  }
   return true;
 });
 
 ipcMain.handle("wallet/get-account-by-number", async (_, index: number) => {
-  return (await Wallet.get().getAccountByNumber(index)).address();
+  return Wallet.get().getAccountByNumber(index).address();
+});
+
+ipcMain.handle("account/get-info", async (_, address: string) => {
+  return await libernet().getAccountInfo(address);
 });

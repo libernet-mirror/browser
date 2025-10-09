@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { libernet, useAsyncEffect } from "./Utilities";
+import { libernet } from "./Libernet";
+import { useAsyncEffect } from "./Utilities";
 
 export const ControlBar = () => {
   const [url, setUrl] = useState("");
@@ -13,6 +14,7 @@ export const ControlBar = () => {
     () =>
       libernet().onUrl((url: string) => {
         setUrl(url);
+        setTypingUrl(null);
       }),
     [],
   );
@@ -112,6 +114,30 @@ export const ControlBar = () => {
             autoCapitalize="off"
           />
         </form>
+      </div>
+      <div className="inline-flex rounded-md shadow-xs">
+        <button
+          type="button"
+          className="inline-flex items-center rounded-lg border border-gray-200 bg-white px-3 py-1 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:text-blue-700 focus:ring-2 focus:ring-blue-700 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white dark:focus:text-white dark:focus:ring-blue-500"
+          onClick={() => libernet().setUrl("liber://wallet")}
+        >
+          <svg
+            className="h-6 w-6"
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M17 8H5m12 0a1 1 0 0 1 1 1v2.6M17 8l-4-4M5 8a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.6M5 8l4-4 4 4m6 4h-4a2 2 0 1 0 0 4h4a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1Z"
+            />
+          </svg>
+        </button>
       </div>
     </div>
   );

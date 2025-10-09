@@ -1,13 +1,19 @@
 import { useState } from "react";
 
-import { libernet, useAsyncEffect } from "./Utilities";
+import { type AccountInfo } from "../data";
+
+import { libernet } from "./Libernet";
+import { formatBalance, useAsyncEffect } from "./Utilities";
 import { Page as WalletLoginPage } from "./WalletLogin";
 import { Page as WalletSetupPage } from "./WalletSetup";
 
 const Hello = () => {
   const [address, setAddress] = useState<string | null>(null);
+  const [accountInfo, setAccountInfo] = useState<AccountInfo | null>(null);
   useAsyncEffect(async () => {
-    setAddress(await libernet().getAccountByNumber(0));
+    const account = await libernet().getAccountByNumber(0);
+    setAddress(account);
+    setAccountInfo(await libernet().getAccountInfo(account));
   }, []);
   if (!address) {
     return null;
@@ -15,6 +21,15 @@ const Hello = () => {
   return (
     <div className="mx-10 my-5">
       <p className="prose lg:prose-lg">Hello, {address}.</p>
+      {accountInfo && (
+        <p className="prose lg:prose-lg">
+          Your LIB balance is:{" "}
+          <strong>{formatBalance(accountInfo.balance)}</strong>
+          <br />
+          (proven at block #{accountInfo.blockDescriptor.blockNumber} as of{" "}
+          {accountInfo.blockDescriptor.timestamp.toLocaleString()})
+        </p>
+      )}
     </div>
   );
 };

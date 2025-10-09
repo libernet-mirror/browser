@@ -3,7 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import { clsx } from "clsx";
 import { initTooltips } from "flowbite";
 
-import { libernet } from "./Utilities";
+import { libernet } from "./Libernet";
+import { MAX_WALLET_PASSWORDS } from "./Utilities";
 
 const PasswordRow = ({
   index,
@@ -219,8 +220,8 @@ export const Page = () => {
         <h1>Wallet Setup</h1>
         <p>Please provide a password for your wallet.</p>
         <p>
-          You may optionally provide one or more decoy passwords. At most 15
-          passwords are supported.
+          You may optionally provide one or more decoy passwords. At most{" "}
+          {MAX_WALLET_PASSWORDS} passwords are supported.
         </p>
       </article>
       <form
@@ -286,7 +287,7 @@ export const Page = () => {
               }}
             />
           ))}
-          {passwords.length < 15 && (
+          {passwords.length < MAX_WALLET_PASSWORDS && (
             <div className="flex flex-row gap-3">
               <span className="grow"></span>
               <button

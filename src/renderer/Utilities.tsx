@@ -1,20 +1,8 @@
 import { useEffect } from "react";
 
-export interface LibernetAPI {
-  getView(): Promise<"control" | "web" | "system">;
-  getUrl(): Promise<string>;
-  setUrl(url: string): Promise<void>;
-  onUrl(listener: (url: string) => void): () => void;
-  startRefresh(): void;
-  getWalletStatus(): Promise<"none" | "stored" | "loaded">;
-  createWallet(passwords: string[]): Promise<boolean>;
-  loadWallet(password: string): Promise<boolean>;
-  getAccountByNumber(index: number): Promise<string>;
-}
+export const MAX_WALLET_PASSWORDS = 15;
 
-export function libernet(): LibernetAPI {
-  return (window as unknown as { libernet: LibernetAPI }).libernet;
-}
+export const LIBER_UNIT = 1_000_000_000_000_000_000n;
 
 export type EffectDestructor = () => void;
 
@@ -51,4 +39,8 @@ export function useAsyncEffect(
       }
     };
   }, dependencies);
+}
+
+export function formatBalance(balance: bigint): string {
+  return `${balance / LIBER_UNIT}.${(balance % LIBER_UNIT).toString().padStart(18, "0")}`;
 }
