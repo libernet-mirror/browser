@@ -14,6 +14,7 @@ export const ControlBar = () => {
     () =>
       libernet().onUrl((url: string) => {
         setUrl(url);
+        setTypingUrl(null);
       }),
     [],
   );
