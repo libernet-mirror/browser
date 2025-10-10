@@ -40,16 +40,28 @@ export class Libernet {
   public constructor(public readonly account: Account) {
     this._client = new (libernet["NodeServiceV1"] as ServiceClientConstructor)(
       BOOTSTRAP_NODE_ADDRESS,
-      grpcCredentials.createSsl(null),
+      grpcCredentials.createSsl(
+        null,
+        Buffer.from(account.export_ed25519_private_key_pem(), "ascii"),
+      ),
     );
   }
 
   public async getBalance(address: string): Promise<string> {
-    const response = await this._client.getAccount({
-      blockHash: null,
-      accountAddress: address,
+    return new Promise((resolve, reject) => {
+      this._client.getAccount(
+        {
+          blockHash: null,
+          accountAddress: address,
+        },
+        (error, response) => {
+          if (error) {
+            reject(error);
+          } else {
+            console.dir(response);
+          }
+        },
+      );
     });
-    // TODO
-    throw new Error("not implemented");
   }
 }

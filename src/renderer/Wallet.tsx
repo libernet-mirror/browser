@@ -1,13 +1,17 @@
 import { useState } from "react";
 
-import { libernet, useAsyncEffect } from "./Utilities";
+import { libernet } from "./Libernet";
+import { useAsyncEffect } from "./Utilities";
 import { Page as WalletLoginPage } from "./WalletLogin";
 import { Page as WalletSetupPage } from "./WalletSetup";
 
 const Hello = () => {
   const [address, setAddress] = useState<string | null>(null);
+  const [balance, setBalance] = useState<string | null>(null);
   useAsyncEffect(async () => {
-    setAddress(await libernet().getAccountByNumber(0));
+    const account = await libernet().getAccountByNumber(0);
+    setAddress(account);
+    setBalance(await libernet().getAccountBalance(account));
   }, []);
   if (!address) {
     return null;
@@ -15,6 +19,7 @@ const Hello = () => {
   return (
     <div className="mx-10 my-5">
       <p className="prose lg:prose-lg">Hello, {address}.</p>
+      {balance && <p className="prose lg:prose-lg">LIB balance: {balance}</p>}
     </div>
   );
 };

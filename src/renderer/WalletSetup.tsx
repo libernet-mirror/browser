@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { clsx } from "clsx";
 import { initTooltips } from "flowbite";
 
-import { libernet } from "./Utilities";
+import { libernet } from "./Libernet";
 
 const PasswordRow = ({
   index,
