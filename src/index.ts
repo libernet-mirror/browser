@@ -263,7 +263,7 @@ ipcMain.handle("wallet/load", async (_, password: string) => {
     password,
   );
   try {
-    _libernet = await Libernet.create(await wallet.getAccountByNumber(0));
+    _libernet = await Libernet.create(wallet.getAccountByNumber(0));
   } catch (error) {
     console.error(error);
   }
@@ -271,7 +271,7 @@ ipcMain.handle("wallet/load", async (_, password: string) => {
 });
 
 ipcMain.handle("wallet/get-account-by-number", async (_, index: number) => {
-  return (await Wallet.get().getAccountByNumber(index)).address();
+  return Wallet.get().getAccountByNumber(index).address();
 });
 
 ipcMain.handle("account/get-balance", async (_, address: string) => {

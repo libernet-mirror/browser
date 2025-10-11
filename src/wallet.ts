@@ -94,7 +94,7 @@ export class Wallet {
     }
   }
 
-  public async getAccountByNumber(index: number): Promise<Account> {
+  public getAccountByNumber(index: number): Account {
     let account = this._accountsByNumber.get(index);
     if (!account) {
       account = this._inner.derive_account(this._password, index);
