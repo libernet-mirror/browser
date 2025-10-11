@@ -51,16 +51,6 @@ const libernet = loadPackageDefinition(packageDefinition)
 export class Libernet {
   private readonly _client;
 
-  private static _decodePem(pem: string): Buffer {
-    return Buffer.from(
-      pem
-        .replace(/-----BEGIN [A-Z ]+-----/, "")
-        .replace(/-----END [A-Z ]+-----/, "")
-        .replace(/\s+/g, ""),
-      "base64",
-    );
-  }
-
   private static _encodePem(b64: string, label: string): string {
     const formatted = b64.match(/.{1,64}/g)?.join("\n");
     return `-----BEGIN ${label}-----\n${formatted}\n-----END ${label}-----`;
