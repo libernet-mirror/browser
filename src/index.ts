@@ -262,7 +262,11 @@ ipcMain.handle("wallet/load", async (_, password: string) => {
     JSON.parse(data) as WalletData,
     password,
   );
-  _libernet = new Libernet(await wallet.getAccountByNumber(0));
+  try {
+    _libernet = await Libernet.create(await wallet.getAccountByNumber(0));
+  } catch (error) {
+    console.error(error);
+  }
   return true;
 });
 

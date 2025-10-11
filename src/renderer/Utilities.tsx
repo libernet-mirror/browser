@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 
+export const MAX_WALLET_PASSWORDS = 15;
+
 export type EffectDestructor = () => void;
 
 export function useAsyncEffect(
