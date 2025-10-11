@@ -1,8 +1,8 @@
+import { webcrypto } from "node:crypto";
 import path from "node:path";
 
 import { app } from "electron";
 
-import { Crypto } from "@peculiar/webcrypto";
 import * as asn1js from "asn1js";
 import * as pkijs from "pkijs";
 
@@ -19,7 +19,6 @@ import type { Account } from "../crypto-bindings/crypto";
 
 const BOOTSTRAP_NODE_ADDRESS = "localhost:4443";
 
-const crypto = new Crypto();
 pkijs.setEngine(
   "NodeEngine",
   new pkijs.CryptoEngine({
@@ -51,8 +50,8 @@ const libernet = loadPackageDefinition(packageDefinition)
 export class Libernet {
   private readonly _client;
 
-  private static _encodePem(b64: string, label: string): string {
-    const formatted = b64.match(/.{1,64}/g)?.join("\n");
+  private static _encodePem(base64: string, label: string): string {
+    const formatted = base64.match(/.{1,64}/g)?.join("\n");
     return `-----BEGIN ${label}-----\n${formatted}\n-----END ${label}-----`;
   }
 
@@ -60,12 +59,12 @@ export class Libernet {
     privateKey: string;
     certificate: string;
   }> {
-    const keypair = await crypto.subtle.generateKey("Ed25519", true, [
+    const keypair = (await webcrypto.subtle.generateKey("Ed25519", true, [
       "sign",
       "verify",
-    ]);
+    ])) as CryptoKeyPair;
 
-    const pkcs8 = await crypto.subtle.exportKey("pkcs8", keypair.privateKey);
+    const pkcs8 = await webcrypto.subtle.exportKey("pkcs8", keypair.privateKey);
     const pkcs8Base64 = Buffer.from(pkcs8).toString("base64");
     const privateKeyPem = Libernet._encodePem(pkcs8Base64, "PRIVATE KEY");
 
@@ -97,11 +96,11 @@ export class Libernet {
     );
 
     await certificate.subjectPublicKeyInfo.importKey(keypair.publicKey);
-    await certificate.sign(keypair.privateKey, "SHA3");
+    await certificate.sign(keypair.privateKey);
 
     const der = certificate.toSchema(true).toBER(false);
-    const b64 = Buffer.from(der).toString("base64");
-    const certificatePem = Libernet._encodePem(b64, "CERTIFICATE");
+    const base64 = Buffer.from(der).toString("base64");
+    const certificatePem = Libernet._encodePem(base64, "CERTIFICATE");
 
     return { privateKey: privateKeyPem, certificate: certificatePem };
   }
