@@ -238,8 +238,6 @@ ipcMain.handle("wallet/create", async (_, passwords: string[]) => {
   const wallet = await Wallet.create(passwords);
   const data: WalletData = {
     version: "1.0",
-    num_kdf_rounds: Wallet.NUM_KDF_ROUNDS,
-    salt: wallet.salt,
     seed: wallet.seed,
     c: wallet.commitment,
     y: wallet.proofs,

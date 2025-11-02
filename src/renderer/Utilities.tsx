@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-export const MAX_WALLET_PASSWORDS = 15;
+export const MAX_WALLET_PASSWORDS = 10;
 
 export const LIBER_UNIT = 1_000_000_000_000_000_000n;
 

@@ -27,25 +27,16 @@ export type WalletDataProofs = [
   string,
   string,
   string,
-  string,
-  string,
-  string,
-  string,
-  string,
 ];
 
 export type WalletData = {
   version: "1.0";
-  num_kdf_rounds: number;
-  salt: string;
   seed: string;
   c: string;
   y: WalletDataProofs;
 };
 
 export class Wallet {
-  public static readonly NUM_KDF_ROUNDS = 500_000;
-
   private static _instance: Wallet | null = null;
 
   private readonly _accountsByNumber = new Map<number, Account>();
@@ -62,7 +53,7 @@ export class Wallet {
 
   public static async create(passwords: string[]): Promise<Wallet> {
     return (Wallet._instance = new Wallet(
-      (await getNativeWallet()).create(passwords, Wallet.NUM_KDF_ROUNDS),
+      (await getNativeWallet()).create(passwords),
       passwords[0],
     ));
   }
@@ -75,13 +66,7 @@ export class Wallet {
       throw new Error("unrecognized wallet format");
     }
     return (Wallet._instance = new Wallet(
-      (await getNativeWallet()).load(
-        data.num_kdf_rounds,
-        data.salt,
-        data.seed,
-        data.c,
-        data.y,
-      ),
+      (await getNativeWallet()).load(data.seed, data.c, data.y),
       password,
     ));
   }
@@ -110,10 +95,6 @@ export class Wallet {
     } else {
       throw new Error(`account ${address} not found`);
     }
-  }
-
-  public get salt(): string {
-    return this._inner.salt();
   }
 
   public get seed(): string {
