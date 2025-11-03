@@ -19,6 +19,7 @@ export class AccountInfo {
   public constructor(
     public readonly address: string,
     public readonly blockDescriptor: BlockDescriptor,
+    public readonly hash: string,
     public readonly lastNonce: number,
     public readonly balance: bigint,
     public readonly stakingBalance: bigint,

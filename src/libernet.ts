@@ -9,13 +9,14 @@ import {
   type ServiceClientConstructor,
 } from "@grpc/grpc-js";
 
-import { type Account } from "../crypto-bindings/crypto";
+import type { Account, TernaryMerkleProof } from "../crypto-bindings/crypto";
 
 import type { AccountInfo as AccountInfoProto } from "./proto/libernet/AccountInfo";
 import type { BlockDescriptor as BlockDescriptorProto } from "./proto/libernet/BlockDescriptor";
 import type { GetAccountResponse } from "./proto/libernet/GetAccountResponse";
 import type { MerkleProof as MerkleProofProto } from "./proto/libernet/MerkleProof";
 
+import { createTernaryMerkleProof, poseidonHash } from "./crypto";
 import { AccountInfo, BlockDescriptor } from "./data";
 import { Proxy } from "./proxy";
 import {
@@ -92,22 +93,67 @@ export class Libernet {
     );
   }
 
-  private static _decodeAccountInfo(
+  private static async _decodeMerkleProof(
+    proto: MerkleProofProto,
+    valueAsScalar: string,
+    rootHash: string,
+  ): Promise<TernaryMerkleProof> {
+    return await createTernaryMerkleProof(
+      decodeScalar(proto.key.value),
+      valueAsScalar,
+      rootHash,
+      proto.path
+        .map((node) =>
+          node.child_hashes.map((hash) => decodeScalar(hash.value)),
+        )
+        .flat(),
+    );
+  }
+
+  private static async _decodeAccountInfo(
     address: string,
     blockProto: BlockDescriptorProto,
     accountProto: AccountInfoProto,
-  ): AccountInfo {
+  ): Promise<AccountInfo> {
     const blockDescriptor = Libernet._decodeBlockDescriptor(blockProto);
     const lastNonce = parseInt("" + accountProto.last_nonce, 10);
     const balance = decodeBigInt(accountProto.balance.value);
     const stakingBalance = decodeBigInt(accountProto.staking_balance.value);
+    const hash = await poseidonHash([
+      "0x" + lastNonce.toString(16),
+      decodeScalar(accountProto.balance.value),
+      decodeScalar(accountProto.staking_balance.value),
+    ]);
     return new AccountInfo(
       address,
       blockDescriptor,
+      hash,
       lastNonce,
       balance,
       stakingBalance,
     );
+  }
+
+  private static async _processAccountResponse(
+    address: string,
+    response: GetAccountResponse,
+  ): Promise<AccountInfo> {
+    const proof = unpackAny<MerkleProofProto>(response.payload);
+    const blockDescriptor = proof.block_descriptor;
+    const proto = unpackAny<AccountInfoProto>(proof.value);
+    const info = await Libernet._decodeAccountInfo(
+      address,
+      blockDescriptor,
+      proto,
+    );
+    (
+      await Libernet._decodeMerkleProof(
+        proof,
+        info.hash,
+        decodeScalar(blockDescriptor.accounts_root_hash.value),
+      )
+    ).verify();
+    return info;
   }
 
   public async getAccountInfo(address: string): Promise<AccountInfo> {
@@ -120,22 +166,11 @@ export class Libernet {
         (error: unknown, response: GetAccountResponse) => {
           if (error) {
             reject(error);
-            return;
+          } else {
+            Libernet._processAccountResponse(address, response)
+              .then(resolve)
+              .catch(reject);
           }
-          let info;
-          try {
-            const proof = unpackAny<MerkleProofProto>(response.payload);
-            const proto = unpackAny<AccountInfoProto>(proof.value);
-            info = Libernet._decodeAccountInfo(
-              address,
-              proof.block_descriptor,
-              proto,
-            );
-          } catch (error) {
-            reject(error);
-            return;
-          }
-          resolve(info);
         },
       );
     });
