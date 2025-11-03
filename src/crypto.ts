@@ -15,6 +15,9 @@ class CryptoCacheSlot {
   public async load<Type>(): Promise<Type> {
     if (!this._symbol) {
       this._symbol = this._mutex.locked(async () => {
+        if (this._symbol) {
+          return this._symbol;
+        }
         const crypto: { [name: string]: unknown } = await import(
           "../crypto-bindings/crypto"
         );
