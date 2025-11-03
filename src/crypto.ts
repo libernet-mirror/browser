@@ -3,6 +3,7 @@ import { Mutex } from "./mutex";
 import type {
   poseidon_hash,
   TernaryMerkleProof,
+  Wallet,
 } from "../crypto-bindings/crypto";
 
 class CryptoCacheSlot {
@@ -56,4 +57,18 @@ export async function createTernaryMerkleProof(
   const cls =
     await CryptoLoader.load<typeof TernaryMerkleProof>("TernaryMerkleProof");
   return cls.from_compressed(key, value, rootHash, hashes);
+}
+
+export async function createWallet(passwords: string[]): Promise<Wallet> {
+  const cls = await CryptoLoader.load<typeof Wallet>("Wallet");
+  return cls.create(passwords);
+}
+
+export async function loadWallet(
+  seed: string,
+  commitment: string,
+  y: string[],
+): Promise<Wallet> {
+  const cls = await CryptoLoader.load<typeof Wallet>("Wallet");
+  return cls.load(seed, commitment, y);
 }

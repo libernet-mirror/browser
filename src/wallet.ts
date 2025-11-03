@@ -3,18 +3,10 @@ import type {
   Account,
 } from "../crypto-bindings/crypto";
 
-const getNativeWallet = (() => {
-  let cls: typeof NativeWallet | null = null;
-  return async () => {
-    if (!cls) {
-      const { Wallet: NativeWallet } = await import(
-        "../crypto-bindings/crypto"
-      );
-      cls = NativeWallet;
-    }
-    return cls;
-  };
-})();
+import {
+  createWallet as createNativeWallet,
+  loadWallet as loadNativeWallet,
+} from "./crypto";
 
 export type WalletDataProofs = [
   string,
@@ -53,7 +45,7 @@ export class Wallet {
 
   public static async create(passwords: string[]): Promise<Wallet> {
     return (Wallet._instance = new Wallet(
-      (await getNativeWallet()).create(passwords),
+      await createNativeWallet(passwords),
       passwords[0],
     ));
   }
@@ -66,7 +58,7 @@ export class Wallet {
       throw new Error("unrecognized wallet format");
     }
     return (Wallet._instance = new Wallet(
-      (await getNativeWallet()).load(data.seed, data.c, data.y),
+      await loadNativeWallet(data.seed, data.c, data.y),
       password,
     ));
   }
