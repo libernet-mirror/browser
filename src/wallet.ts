@@ -76,6 +76,7 @@ export class Wallet {
     if (!account) {
       account = this._inner.derive_account(this._password, index);
       this._accountsByNumber.set(index, account);
+      this._accountsByAddress.set(account.address(), account);
     }
     return account;
   }

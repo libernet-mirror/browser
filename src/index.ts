@@ -202,24 +202,14 @@ app.on("activate", () => {
 // In this file you can include the rest of your app's specific main process code. You can also put
 // them in separate files and import them here.
 
-import { Libernet } from "./libernet";
+import { libernet, setLibernetAccount } from "./libernet";
 import { Mutex } from "./mutex";
 import { Wallet, WalletData } from "./wallet";
 
 const walletFileMutex = new Mutex();
 
-let _libernet: Libernet | null = null;
-
 function getWalletPath(): string {
   return path.join(app.getPath("userData"), "wallet.json");
-}
-
-function libernet(): Libernet {
-  if (_libernet) {
-    return _libernet;
-  } else {
-    throw new Error("not connected");
-  }
 }
 
 ipcMain.handle("wallet/get-status", async () => {
@@ -250,29 +240,33 @@ ipcMain.handle("wallet/create", async (_, passwords: string[]) => {
   console.log(`${path} written`);
 });
 
-ipcMain.handle("wallet/load", async (_, password: string) => {
-  const path = getWalletPath();
-  console.log(`reading ${path}`);
-  const data = (await walletFileMutex.locked(() => fs.readFile(path))).toString(
-    "utf-8",
-  );
-  const wallet = await Wallet.load_v1_0(
-    JSON.parse(data) as WalletData,
-    password,
-  );
-  const account = wallet.getAccountByNumber(0);
-  try {
-    _libernet = await Libernet.create(account);
-  } catch (error) {
-    console.error(error);
-  }
-  return true;
+ipcMain.handle(
+  "wallet/load",
+  async (_, password: string, accountIndex: number) => {
+    const path = getWalletPath();
+    console.log(`reading ${path}`);
+    const data = (
+      await walletFileMutex.locked(() => fs.readFile(path))
+    ).toString("utf-8");
+    await Wallet.load_v1_0(JSON.parse(data) as WalletData, password);
+    setLibernetAccount(accountIndex);
+    return true;
+  },
+);
+
+ipcMain.handle("wallet/switch-account", async (_, accountIndex: number) => {
+  setLibernetAccount(accountIndex);
 });
 
-ipcMain.handle("wallet/get-account-by-number", async (_, index: number) => {
+ipcMain.handle("wallet/get-account-address", async (_, index: number) => {
   return Wallet.get().getAccountByNumber(index).address();
 });
 
-ipcMain.handle("account/get-info", async (_, address: string) => {
-  return await libernet().getAccountInfo(address);
+ipcMain.handle("wallet/get-account-by-number", async (_, index: number) => {
+  const address = Wallet.get().getAccountByNumber(index).address();
+  return await (await libernet()).getAccountInfo(address);
+});
+
+ipcMain.handle("wallet/get-account-by-address", async (_, address: string) => {
+  return await (await libernet()).getAccountInfo(address);
 });

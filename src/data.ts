@@ -20,8 +20,21 @@ export class AccountInfo {
     public readonly address: string,
     public readonly blockDescriptor: BlockDescriptor,
     public readonly hash: string,
+    public readonly publicKey: string | null,
     public readonly lastNonce: number,
     public readonly balance: bigint,
     public readonly stakingBalance: bigint,
   ) {}
+
+  public withPublicKey(publicKey: string): AccountInfo {
+    return new AccountInfo(
+      this.address,
+      this.blockDescriptor,
+      this.hash,
+      publicKey,
+      this.lastNonce,
+      this.balance,
+      this.stakingBalance,
+    );
+  }
 }

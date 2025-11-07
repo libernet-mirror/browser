@@ -8,9 +8,11 @@ export interface LibernetAPI {
   startRefresh(): void;
   getWalletStatus(): Promise<"none" | "stored" | "loaded">;
   createWallet(passwords: string[]): Promise<boolean>;
-  loadWallet(password: string): Promise<boolean>;
-  getAccountByNumber(index: number): Promise<string>;
-  getAccountInfo(address: string): Promise<AccountInfo>;
+  loadWallet(password: string, accountIndex: number): Promise<boolean>;
+  switchAccount(accountIndex: number): Promise<void>;
+  getAccountAddress(index: number): Promise<string>;
+  getAccountByNumber(index: number): Promise<AccountInfo>;
+  getAccountByAddress(address: string): Promise<AccountInfo>;
 }
 
 export function libernet(): LibernetAPI {

@@ -1,8 +1,6 @@
 import "react";
 import { createRoot } from "react-dom/client";
 
-import "flowbite";
-
 import "./index.css";
 
 import { App } from "./App";

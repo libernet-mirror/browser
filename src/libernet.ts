@@ -18,6 +18,7 @@ import type { MerkleProof as MerkleProofProto } from "./proto/libernet/MerklePro
 
 import { createTernaryMerkleProof, poseidonHash } from "./crypto";
 import { AccountInfo, BlockDescriptor } from "./data";
+import { Mutex } from "./mutex";
 import { Proxy } from "./proxy";
 import {
   decodeBigInt,
@@ -27,6 +28,7 @@ import {
   libernetPackageDefinition,
   unpackAny,
 } from "./utilities";
+import { Wallet } from "./wallet";
 
 const BOOTSTRAP_NODE_ADDRESS = "localhost:4443";
 
@@ -128,6 +130,7 @@ export class Libernet {
       address,
       blockDescriptor,
       hash,
+      null,
       lastNonce,
       balance,
       stakingBalance,
@@ -138,21 +141,24 @@ export class Libernet {
     address: string,
     response: GetAccountResponse,
   ): Promise<AccountInfo> {
-    const proof = unpackAny<MerkleProofProto>(response.payload);
-    const blockDescriptor = proof.block_descriptor;
-    const proto = unpackAny<AccountInfoProto>(proof.value);
+    const proofProto = unpackAny<MerkleProofProto>(response.payload);
+    const blockDescriptor = proofProto.block_descriptor;
+    const proto = unpackAny<AccountInfoProto>(proofProto.value);
     const info = await Libernet._decodeAccountInfo(
       address,
       blockDescriptor,
       proto,
     );
-    (
-      await Libernet._decodeMerkleProof(
-        proof,
-        info.hash,
-        decodeScalar(blockDescriptor.accounts_root_hash.value),
-      )
-    ).verify();
+    const proof = await Libernet._decodeMerkleProof(
+      proofProto,
+      info.hash,
+      decodeScalar(blockDescriptor.accounts_root_hash.value),
+    );
+    try {
+      proof.verify();
+    } finally {
+      proof.free();
+    }
     return info;
   }
 
@@ -176,7 +182,60 @@ export class Libernet {
     });
   }
 
+  public async getOwnAccountInfo(): Promise<AccountInfo> {
+    return (await this.getAccountInfo(this.account.address())).withPublicKey(
+      this.account.public_key(),
+    );
+  }
+
   public async destroy(): Promise<void> {
     await this._proxy.destroy();
   }
+}
+
+class LibernetManager {
+  public static readonly INSTANCE = new LibernetManager();
+
+  private readonly _mutex = new Mutex();
+  private _accountIndex = 0;
+  private _libernet: Libernet | null = null;
+
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  private constructor() {}
+
+  public setAccount(accountIndex: number) {
+    if (accountIndex !== this._accountIndex) {
+      this._accountIndex = accountIndex;
+      this.destroy();
+    }
+  }
+
+  public async libernet(accountIndex?: number): Promise<Libernet> {
+    accountIndex = accountIndex ?? this._accountIndex;
+    this.setAccount(accountIndex);
+    if (!this._libernet) {
+      await this._mutex.locked(async () => {
+        if (!this._libernet) {
+          const account = Wallet.get().getAccountByNumber(this._accountIndex);
+          this._libernet = await Libernet.create(account);
+        }
+      });
+    }
+    return this._libernet;
+  }
+
+  public destroy() {
+    if (this._libernet) {
+      this._libernet.destroy();
+      this._libernet = null;
+    }
+  }
+}
+
+export function setLibernetAccount(accountIndex: number) {
+  LibernetManager.INSTANCE.setAccount(accountIndex);
+}
+
+export function libernet(...args: number[]): Promise<Libernet> {
+  return LibernetManager.INSTANCE.libernet(...args);
 }
