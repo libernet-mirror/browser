@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 
+import { PlainButton } from "./components/Buttons";
+import { LeftIcon } from "./icons/Left";
+import { RefreshIcon } from "./icons/Refresh";
+import { RightIcon } from "./icons/Right";
+import { WalletIcon } from "./icons/Wallet";
+
 import { libernet } from "./Libernet";
 import { useAsyncEffect } from "./Utilities";
 
@@ -23,72 +29,15 @@ export const ControlBar = () => {
   }, []);
   return (
     <div className="flex w-full gap-2 overflow-hidden px-2 py-1 shadow-sm">
-      <div className="inline-flex rounded-md shadow-xs">
-        <button
-          type="button"
-          className="inline-flex items-center rounded-s-lg border border-gray-200 bg-white px-3 py-1 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:text-blue-700 focus:ring-2 focus:ring-blue-700 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white dark:focus:text-white dark:focus:ring-blue-500"
-        >
-          <svg
-            className="h-6 w-6"
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M5 12h14M5 12l4-4m-4 4 4 4"
-            />
-          </svg>
-        </button>
-        <button
-          type="button"
-          className="inline-flex items-center border-t border-b border-gray-200 bg-white px-3 py-1 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:text-blue-700 focus:ring-2 focus:ring-blue-700 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white dark:focus:text-white dark:focus:ring-blue-500"
-        >
-          <svg
-            className="h-6 w-6"
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M19 12H5m14 0-4 4m4-4-4-4"
-            />
-          </svg>
-        </button>
-        <button
-          type="button"
-          className="inline-flex items-center rounded-e-lg border border-gray-200 bg-white px-3 py-1 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:text-blue-700 focus:ring-2 focus:ring-blue-700 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white dark:focus:text-white dark:focus:ring-blue-500"
-          onClick={() => libernet().startRefresh()}
-        >
-          <svg
-            className="h-6 w-6"
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M17.651 7.65a7.131 7.131 0 0 0-12.68 3.15M18.001 4v4h-4m-7.652 8.35a7.13 7.13 0 0 0 12.68-3.15M6 20v-4h4"
-            />
-          </svg>
-        </button>
-      </div>
+      <PlainButton round>
+        <LeftIcon className="size-5" />
+      </PlainButton>
+      <PlainButton round>
+        <RightIcon className="size-5" />
+      </PlainButton>
+      <PlainButton round onClick={() => libernet().startRefresh()}>
+        <RefreshIcon className="size-5" />
+      </PlainButton>
       <div className="grow">
         <form
           onSubmit={async (e) => {
@@ -99,7 +48,7 @@ export const ControlBar = () => {
         >
           <input
             type="text"
-            className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
+            className="w-full rounded-md border-2 border-neutral-100 bg-neutral-100 px-3 py-1 outline-none focus:border-blue-600 focus:bg-white"
             placeholder="Type a URL"
             value={shownUrl}
             onChange={({ target }) => setTypingUrl(target.value)}
@@ -110,35 +59,15 @@ export const ControlBar = () => {
             onBlur={({ target }) => {
               target.setSelectionRange(null, null);
             }}
+            spellCheck={false}
             autoCorrect="off"
             autoCapitalize="off"
           />
         </form>
       </div>
-      <div className="inline-flex rounded-md shadow-xs">
-        <button
-          type="button"
-          className="inline-flex items-center rounded-lg border border-gray-200 bg-white px-3 py-1 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:text-blue-700 focus:ring-2 focus:ring-blue-700 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white dark:focus:text-white dark:focus:ring-blue-500"
-          onClick={() => libernet().setUrl("liber://wallet")}
-        >
-          <svg
-            className="h-6 w-6"
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M17 8H5m12 0a1 1 0 0 1 1 1v2.6M17 8l-4-4M5 8a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.6M5 8l4-4 4 4m6 4h-4a2 2 0 1 0 0 4h4a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1Z"
-            />
-          </svg>
-        </button>
-      </div>
+      <PlainButton round onClick={() => libernet().setUrl("liber://wallet")}>
+        <WalletIcon className="size-5" />
+      </PlainButton>
     </div>
   );
 };

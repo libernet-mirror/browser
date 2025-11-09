@@ -9,23 +9,22 @@ import { derToPem } from "./utilities";
 
 export class Proxy {
   private _server: net.Server | null = null;
+  private _listening = false;
+
   private _localSocket: net.Socket | null = null;
   private _tlsSocket: tls.TLSSocket | null = null;
 
   private constructor(
-    private readonly _account: Account,
+    private readonly _account: Account, // not owned -- don't free
     private readonly _path: string,
     private readonly _remoteHost: string,
     private readonly _remotePort: number,
   ) {}
 
   private async _start(): Promise<void> {
-    try {
-      await fs.unlink(this._path);
-    } catch {
-      // ignore
-    }
+    await fs.unlink(this._path).catch(() => {});
 
+    this._listening = true;
     this._server = net.createServer(async (localSocket) => {
       if (this._localSocket) {
         return;
@@ -37,12 +36,7 @@ export class Proxy {
       });
       this._localSocket = localSocket;
 
-      this._server.close();
-      try {
-        await fs.unlink(this._path);
-      } catch {
-        // ignore
-      }
+      this._closeAndUnlink().catch(() => {});
 
       const privateKey = this._account.export_ecdsa_private_key_pem();
       const notBefore = Date.now() - 1000 * 3600 * 24;
@@ -67,7 +61,9 @@ export class Proxy {
             derToPem(peerCertificate.raw, "CERTIFICATE"),
             BigInt(Date.now()),
           );
-          console.log(`connected to: ${remote.address()}`);
+          console.log(
+            `connected to ${remote.address()}\n          as ${this._account.address()}`,
+          );
 
           this._localSocket.resume();
           this._localSocket.pipe(this._tlsSocket);
@@ -118,8 +114,29 @@ export class Proxy {
     return proxy;
   }
 
+  public get account(): Account {
+    return this._account;
+  }
+
+  public get path(): string {
+    return this._path;
+  }
+
+  public get remoteHost(): string {
+    return this._remoteHost;
+  }
+
+  public get remotePort(): number {
+    return this._remotePort;
+  }
+
   private _closeServer(): Promise<void> {
     return new Promise((resolve, reject) => {
+      if (!this._listening) {
+        resolve();
+        return;
+      }
+      this._listening = false;
       this._server.close((error) => {
         if (error) {
           reject(error);
@@ -130,10 +147,14 @@ export class Proxy {
     });
   }
 
+  private async _closeAndUnlink(): Promise<void> {
+    await this._closeServer().catch(() => {});
+    await fs.unlink(this._path).catch(() => {});
+  }
+
   public async destroy() {
     if (this._server) {
-      await this._closeServer().catch(() => {});
-      await fs.unlink(this._path).catch(() => {});
+      await this._closeAndUnlink().catch(() => {});
     }
     if (this._tlsSocket) {
       this._tlsSocket.destroy();

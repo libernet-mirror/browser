@@ -36,12 +36,14 @@ const packageDefinition = loadPackageDefinition(libernetPackageDefinition)
   .libernet as GrpcObject;
 
 export class Libernet {
+  private static _socketCounter = 0;
+
   private readonly _client;
 
-  private static _getUnixSocketAddress(target: string): string {
+  private static _getUnixSocketPath(target: string): string {
     return path.join(
       app.getPath("temp"),
-      `libernet-${process.pid}-${target}.sock`,
+      `libernet-${process.pid}-${Libernet._socketCounter++}-${target}.sock`,
     );
   }
 
@@ -52,7 +54,7 @@ export class Libernet {
     this._client = new (packageDefinition[
       "NodeServiceV1"
     ] as ServiceClientConstructor)(
-      `unix://${Libernet._getUnixSocketAddress(BOOTSTRAP_NODE_ADDRESS)}`,
+      `unix://${_proxy.path}`,
       grpcCredentials.createInsecure(),
     );
   }
@@ -60,7 +62,7 @@ export class Libernet {
   public static async create(account: Account): Promise<Libernet> {
     const proxy = await Proxy.create(
       account,
-      Libernet._getUnixSocketAddress(BOOTSTRAP_NODE_ADDRESS),
+      Libernet._getUnixSocketPath(BOOTSTRAP_NODE_ADDRESS),
       BOOTSTRAP_NODE_ADDRESS,
     );
     return new Libernet(account, proxy);
@@ -198,42 +200,48 @@ class LibernetManager {
 
   private readonly _mutex = new Mutex();
   private _accountIndex = 0;
+  private _account: Account | null = null; // not owned -- don't free
   private _libernet: Libernet | null = null;
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   private constructor() {}
 
-  public setAccount(accountIndex: number) {
+  public async setAccount(accountIndex: number): Promise<void> {
     if (accountIndex !== this._accountIndex) {
+      await this.destroy();
       this._accountIndex = accountIndex;
-      this.destroy();
+    }
+    if (!this._account) {
+      this._account = Wallet.get().getAccountByNumber(accountIndex);
     }
   }
 
   public async libernet(accountIndex?: number): Promise<Libernet> {
-    accountIndex = accountIndex ?? this._accountIndex;
-    this.setAccount(accountIndex);
+    accountIndex ??= this._accountIndex;
+    await this.setAccount(accountIndex);
     if (!this._libernet) {
       await this._mutex.locked(async () => {
-        if (!this._libernet) {
-          const account = Wallet.get().getAccountByNumber(this._accountIndex);
-          this._libernet = await Libernet.create(account);
+        if (!this._libernet && accountIndex === this._accountIndex) {
+          this._libernet = await Libernet.create(this._account);
         }
       });
     }
     return this._libernet;
   }
 
-  public destroy() {
+  public async destroy(): Promise<void> {
     if (this._libernet) {
-      this._libernet.destroy();
+      await this._libernet.destroy();
       this._libernet = null;
+    }
+    if (this._account) {
+      this._account = null;
     }
   }
 }
 
-export function setLibernetAccount(accountIndex: number) {
-  LibernetManager.INSTANCE.setAccount(accountIndex);
+export async function setLibernetAccount(accountIndex: number): Promise<void> {
+  await LibernetManager.INSTANCE.setAccount(accountIndex);
 }
 
 export function libernet(...args: number[]): Promise<Libernet> {

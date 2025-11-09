@@ -1,13 +1,10 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
-@import "flowbite/src/themes/default";
-@plugin "flowbite/plugin";
-@source "../../node_modules/flowbite";
-
 html,
 body {
   margin: 0;
   border: none;
   padding: 0;
+  background-color: transparent;
 }

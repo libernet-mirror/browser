@@ -12,7 +12,7 @@ export default function Logo({
     <svg
       width={width}
       height={height}
-      viewBox={`0 0 ${width} ${height}`}
+      viewBox="0 0 690 690"
       version="1.1"
       xmlns="http://www.w3.org/2000/svg"
       {...props}
@@ -26,13 +26,13 @@ export default function Logo({
         gradientUnits="userSpaceOnUse"
         gradientTransform="translate(-193.55552,-129.3335)"
       >
-        <stop offset="0.00286" stop-color="#2469fe" stop-opacity="1" />
-        <stop offset="1" stop-color="#065ee2" stop-opacity="1" />
-        <stop offset="1" stop-color="#0e85b8" stop-opacity="1" />
-        <stop offset="1" stop-color="#15a396" stop-opacity="1" />
-        <stop offset="1" stop-color="#1ab97f" stop-opacity="1" />
-        <stop offset="1" stop-color="#1dc670" stop-opacity="1" />
-        <stop offset="1" stop-color="#173ae1" stop-opacity="1" />
+        <stop offset="0.00286" stopColor="#2469fe" stopOpacity="1" />
+        <stop offset="1" stopColor="#065ee2" stopOpacity="1" />
+        <stop offset="1" stopColor="#0e85b8" stopOpacity="1" />
+        <stop offset="1" stopColor="#15a396" stopOpacity="1" />
+        <stop offset="1" stopColor="#1ab97f" stopOpacity="1" />
+        <stop offset="1" stopColor="#1dc670" stopOpacity="1" />
+        <stop offset="1" stopColor="#173ae1" stopOpacity="1" />
       </linearGradient>
       <path
         fill="url(#linearGradient1)"

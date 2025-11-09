@@ -22,7 +22,7 @@ if (require("electron-squirrel-startup")) {
 
 const INITIAL_WIDTH = 800;
 const INITIAL_HEIGHT = 600;
-const CONTROL_BAR_HEIGHT = 50;
+const CONTROL_BAR_HEIGHT = 45;
 
 const SYSTEM_URL_WALLET = "liber://wallet";
 
@@ -63,6 +63,7 @@ const createWindow = async () => {
       if (currentView) {
         currentView.removeAllListeners();
         mainWindow.contentView.removeChildView(currentView);
+        currentView.webContents.close();
         currentView = null;
       }
       viewType = "system";
@@ -104,6 +105,7 @@ const createWindow = async () => {
       if (currentView) {
         currentView.removeAllListeners();
         mainWindow.contentView.removeChildView(currentView);
+        currentView.webContents.close();
         currentView = null;
       }
       viewType = "web";
@@ -236,6 +238,11 @@ ipcMain.handle("wallet/create", async (_, passwords: string[]) => {
   const text = JSON.stringify(data, null, 2);
   await walletFileMutex.locked(async () => {
     await fs.writeFile(path, text);
+    try {
+      await fs.chmod(path, 0o400);
+    } catch (error) {
+      console.error(error);
+    }
   });
   console.log(`${path} written`);
 });
@@ -249,13 +256,13 @@ ipcMain.handle(
       await walletFileMutex.locked(() => fs.readFile(path))
     ).toString("utf-8");
     await Wallet.load_v1_0(JSON.parse(data) as WalletData, password);
-    setLibernetAccount(accountIndex);
+    await setLibernetAccount(accountIndex);
     return true;
   },
 );
 
 ipcMain.handle("wallet/switch-account", async (_, accountIndex: number) => {
-  setLibernetAccount(accountIndex);
+  await setLibernetAccount(accountIndex);
 });
 
 ipcMain.handle("wallet/get-account-address", async (_, index: number) => {

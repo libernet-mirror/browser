@@ -44,3 +44,9 @@ export function useAsyncEffect(
 export function formatBalance(balance: bigint): string {
   return `${balance / LIBER_UNIT}.${(balance % LIBER_UNIT).toString().padStart(18, "0")}`;
 }
+
+export function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}

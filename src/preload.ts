@@ -21,7 +21,7 @@ contextBridge.exposeInMainWorld("libernet", {
     ipcRenderer.invoke("wallet/create", passwords),
   loadWallet: (password: string, accountIndex: number) =>
     ipcRenderer.invoke("wallet/load", password, accountIndex),
-  swichAccount: (accountIndex: number) =>
+  switchAccount: (accountIndex: number) =>
     ipcRenderer.invoke("wallet/switch-account", accountIndex),
   getAccountAddress: (index: number) =>
     ipcRenderer.invoke("wallet/get-account-address", index),

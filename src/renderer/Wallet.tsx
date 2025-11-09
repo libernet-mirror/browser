@@ -1,7 +1,14 @@
-import { initDropdowns } from "flowbite";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { type AccountInfo } from "../data";
+
+import { Card } from "./components/Card";
+import {
+  Dropdown,
+  DropdownButton,
+  DropdownItem,
+  DropdownMenu,
+} from "./components/Dropdown";
 
 import { jazzicon } from "./Jazzicon";
 import { libernet } from "./Libernet";
@@ -10,101 +17,73 @@ import { formatBalance, useAsyncEffect } from "./Utilities";
 import { Page as WalletLoginPage } from "./WalletLogin";
 import { Page as WalletSetupPage } from "./WalletSetup";
 
-const AccountDropdown = ({
-  accounts,
-  currentAccountIndex,
-  onAddAccount,
+const AccountTile = ({
+  account,
+  index,
 }: {
-  accounts: AccountInfo[];
-  currentAccountIndex: number;
-  onAddAccount?: () => void;
-}) => {
-  useEffect(() => {
-    initDropdowns();
-  }, []);
-  const account = accounts[currentAccountIndex];
-  return (
-    <div className="flex items-center space-x-3 md:order-2 md:space-x-0 rtl:space-x-reverse">
-      <button
-        type="button"
-        className="flex rounded-full bg-gray-800 text-sm focus:ring-4 focus:ring-gray-300 md:me-0 dark:focus:ring-gray-600"
-        id="account-menu-button"
-        data-dropdown-toggle="account-dropdown"
-        data-dropdown-placement="bottom-end"
-      >
-        <img
-          className="h-8 w-8 rounded-full"
-          src={jazzicon(account.address)}
-          alt={account.address}
-        />
-      </button>
-      <div
-        className="z-50 my-4 hidden list-none divide-y divide-gray-100 rounded-lg bg-white text-base shadow-sm dark:divide-gray-600 dark:bg-gray-700"
-        id="account-dropdown"
-      >
-        <div className="px-4 py-3">
-          <span className="block text-sm text-gray-900 dark:text-white">
-            Account {currentAccountIndex + 1}
-          </span>
-          <span className="block truncate text-sm text-gray-500 dark:text-gray-400">
-            <pre>{account.address}</pre>
-          </span>
-        </div>
-        <ol className="py-2">
-          {accounts.map((_, index) => (
-            <li>
-              <button
-                disabled={index === currentAccountIndex}
-                className="block w-full cursor-pointer px-4 py-2 text-start text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600 dark:hover:text-white"
-              >
-                Account {index + 1}
-              </button>
-            </li>
-          ))}
-        </ol>
-        <ol className="py-2">
-          <li>
-            <button
-              className="block w-full cursor-pointer px-4 py-2 text-start text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600 dark:hover:text-white"
-              onClick={() => onAddAccount?.()}
-            >
-              Show next account&hellip;
-            </button>
-          </li>
-        </ol>
-      </div>
-    </div>
-  );
-};
+  account: AccountInfo;
+  index: number;
+}) => (
+  <span className="inline-flex flex-row gap-x-4">
+    <span className="content-center">
+      <img
+        src={jazzicon(account.address)}
+        alt={account.address}
+        className="size-8 rounded-md"
+      />
+    </span>
+    <span className="flex grow flex-col">
+      <span>Account {index + 1}</span>
+      <pre>{account.address.slice(0, 30)}&hellip;</pre>
+    </span>
+  </span>
+);
 
 const Navbar = ({
   accounts,
   currentAccountIndex,
-  onAddAccount,
+  onSwitchToAccount,
+  onSwitchToNextAccount,
 }: {
   accounts: AccountInfo[];
   currentAccountIndex: number;
-  onAddAccount?: () => void;
-}) => (
-  <nav className="border-gray-200 bg-white dark:bg-gray-900">
-    <div className="mx-auto flex max-w-screen-xl flex-wrap items-center justify-between p-4">
-      <a
-        href="liber://wallet"
-        className="flex items-center space-x-3 rtl:space-x-reverse"
-      >
-        <Logo className="h-8 w-8" />
-      </a>
-      <AccountDropdown
-        accounts={accounts}
-        currentAccountIndex={currentAccountIndex}
-        onAddAccount={onAddAccount}
-      />
-    </div>
-  </nav>
-);
+  onSwitchToAccount(index: number): Promise<void>;
+  onSwitchToNextAccount(): Promise<void>;
+}) => {
+  const account = accounts[currentAccountIndex];
+  return (
+    <header className="flex bg-white p-2 shadow-sm">
+      <Logo className="size-8" />
+      <span className="grow" />
+      <Dropdown>
+        <DropdownButton>
+          <img
+            src={jazzicon(account.address)}
+            alt={account.address}
+            className="size-6 rounded-md"
+          />
+        </DropdownButton>
+        <DropdownMenu>
+          {accounts.map((account, index) => (
+            <DropdownItem
+              key={index}
+              disabled={index === currentAccountIndex}
+              onClick={() => onSwitchToAccount(index)}
+            >
+              <AccountTile account={account} index={index} />
+            </DropdownItem>
+          ))}
+          <DropdownItem onClick={() => onSwitchToNextAccount()}>
+            Switch to next account&hellip;
+          </DropdownItem>
+        </DropdownMenu>
+      </Dropdown>
+    </header>
+  );
+};
 
 const Balance = ({ account }: { account: AccountInfo }) => (
-  <div className="mx-10 my-5">
+  <Card className="mx-auto mt-3">
     <p className="prose lg:prose-lg">Hello, {account.address}.</p>
     <p className="prose lg:prose-lg">
       Your LIB balance is: <strong>{formatBalance(account.balance)}</strong>
@@ -112,7 +91,7 @@ const Balance = ({ account }: { account: AccountInfo }) => (
       (proven at block #{account.blockDescriptor.blockNumber} as of{" "}
       {account.blockDescriptor.timestamp.toLocaleString()})
     </p>
-  </div>
+  </Card>
 );
 
 const hasAssets = (account: AccountInfo) =>
@@ -120,6 +99,7 @@ const hasAssets = (account: AccountInfo) =>
 
 const Hello = () => {
   const [accounts, setAccounts] = useState<AccountInfo[]>([]);
+  const [currentAccountIndex, setCurrentAccountIndex] = useState(0);
   useAsyncEffect(async () => {
     let account: AccountInfo;
     let index = 0;
@@ -128,26 +108,31 @@ const Hello = () => {
       setAccounts(accounts.concat(account));
     } while (hasAssets(account));
   }, []);
-  if (accounts.length > 0) {
-    const account = accounts[0];
-    return (
-      <>
-        <Navbar
-          accounts={accounts}
-          currentAccountIndex={0}
-          onAddAccount={async () => {
-            const account = await libernet().getAccountByNumber(
-              accounts.length,
-            );
-            setAccounts(accounts.concat(account));
-          }}
-        />
-        <Balance account={account} />
-      </>
-    );
-  } else {
+  if (!accounts.length) {
     return null;
   }
+  return (
+    <div className="flex min-h-svh w-full flex-col bg-neutral-100">
+      <Navbar
+        accounts={accounts}
+        currentAccountIndex={currentAccountIndex}
+        onSwitchToAccount={async (index) => {
+          await libernet().switchAccount(index);
+          setCurrentAccountIndex(index);
+        }}
+        onSwitchToNextAccount={async () => {
+          const index = accounts.length;
+          const account = await libernet().getAccountByNumber(index);
+          if (accounts.length === index) {
+            setAccounts(accounts.concat(account));
+            await libernet().switchAccount(index);
+            setCurrentAccountIndex(index);
+          }
+        }}
+      />
+      <Balance account={accounts[currentAccountIndex]} />
+    </div>
+  );
 };
 
 export const Page = () => {
@@ -177,7 +162,13 @@ export const Page = () => {
         />
       );
     case "none":
-      return <WalletSetupPage />;
+      return (
+        <WalletSetupPage
+          onCreate={async () =>
+            setWalletStatus(await libernet().getWalletStatus())
+          }
+        />
+      );
     default:
       return null;
   }
