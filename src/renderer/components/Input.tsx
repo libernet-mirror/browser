@@ -26,4 +26,4 @@ export const ValidationError = ({
 }: {
   message: string;
   className?: string;
-}) => <p className={clsx("mt-2 text-sm text-red-500", className)}>{message}</p>;
+}) => <p className={clsx("text-sm text-red-500", className)}>{message}</p>;
