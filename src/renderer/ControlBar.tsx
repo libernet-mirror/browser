@@ -29,10 +29,16 @@ export const ControlBar = () => {
   }, []);
   return (
     <div className="flex w-full gap-2 overflow-hidden px-2 py-1 shadow-sm">
-      <PlainButton round>
+      <PlainButton
+        round
+        onClick={async () => setUrl(await libernet().navigateBack())}
+      >
         <LeftIcon className="size-5" />
       </PlainButton>
-      <PlainButton round>
+      <PlainButton
+        round
+        onClick={async () => setUrl(await libernet().navigateForward())}
+      >
         <RightIcon className="size-5" />
       </PlainButton>
       <PlainButton round onClick={() => libernet().startRefresh()}>

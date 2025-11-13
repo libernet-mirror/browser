@@ -5,6 +5,8 @@ export interface LibernetAPI {
   getUrl(): Promise<string>;
   setUrl(url: string): Promise<void>;
   onUrl(listener: (url: string) => void): () => void;
+  navigateBack(): Promise<string>;
+  navigateForward(): Promise<string>;
   startRefresh(): void;
   getWalletStatus(): Promise<"none" | "stored" | "loaded">;
   createWallet(passwords: string[]): Promise<boolean>;

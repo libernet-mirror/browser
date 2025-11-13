@@ -125,11 +125,18 @@ const createWindow = async () => {
         height: height - CONTROL_BAR_HEIGHT,
       });
       currentView.webContents
-        .on("will-navigate", ({ url }) => {
+        .on("will-navigate", ({ url, isMainFrame }) => {
+          if (isMainFrame) {
+            controlBar.webContents.send("root/url", (currentUrl = url));
+          }
+        })
+        .on("did-navigate", (_, url) => {
           controlBar.webContents.send("root/url", (currentUrl = url));
         })
-        .on("did-navigate-in-page", (_, url) => {
-          controlBar.webContents.send("root/url", (currentUrl = url));
+        .on("did-navigate-in-page", (_, url, isMainFrame) => {
+          if (isMainFrame) {
+            controlBar.webContents.send("root/url", (currentUrl = url));
+          }
         });
       mainWindow.contentView.addChildView(currentView);
       mainWindow.contentView.addChildView(controlBar);
@@ -160,6 +167,28 @@ const createWindow = async () => {
       default:
         await setWebView(url);
         break;
+    }
+  });
+
+  ipcMain.handle("root/back", () => {
+    const history = currentView?.webContents.navigationHistory;
+    if (history) {
+      history.goBack();
+      const entry = history.getEntryAtIndex(history.getActiveIndex());
+      return entry.url;
+    } else {
+      return "";
+    }
+  });
+
+  ipcMain.handle("root/forward", () => {
+    const history = currentView?.webContents.navigationHistory;
+    if (history) {
+      history.goForward();
+      const entry = history.getEntryAtIndex(history.getActiveIndex());
+      return entry.url;
+    } else {
+      return "";
     }
   });
 

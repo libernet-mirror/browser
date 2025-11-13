@@ -15,7 +15,9 @@ contextBridge.exposeInMainWorld("libernet", {
       ipcRenderer.off("root/url", lowLevelListener);
     };
   },
-  startRefresh: () => ipcRenderer.send("root/refresh"),
+  navigateBack: () => ipcRenderer.invoke("root/back"),
+  navigateForward: () => ipcRenderer.invoke("root/forward"),
+  startRefresh: () => ipcRenderer.invoke("root/refresh"),
   getWalletStatus: () => ipcRenderer.invoke("wallet/get-status"),
   createWallet: (passwords: string[]) =>
     ipcRenderer.invoke("wallet/create", passwords),
