@@ -1,13 +1,21 @@
 import { AccountInfo } from "../data";
 
+export type ContentView = "control" | "web" | "settings" | "wallet";
+
 export interface LibernetAPI {
-  getView(): Promise<"control" | "web" | "system">;
+  getView(): Promise<ContentView>;
   getUrl(): Promise<string>;
   setUrl(url: string): Promise<void>;
   onUrl(listener: (url: string) => void): () => void;
+  onViewChange(listener: (view: ContentView) => void): () => void;
+  onStartNavigation(listener: () => void): () => void;
+  onFinishNavigation(listener: () => void): () => void;
   navigateBack(): Promise<string>;
   navigateForward(): Promise<string>;
   startRefresh(): void;
+  cancelNavigation(): void;
+  getNodeList(): Promise<string[]>;
+  setNodeList(nodes: string[]): Promise<void>;
   getWalletStatus(): Promise<"none" | "stored" | "loaded">;
   createWallet(passwords: string[]): Promise<boolean>;
   loadWallet(password: string, accountIndex: number): Promise<boolean>;

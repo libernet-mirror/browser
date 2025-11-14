@@ -30,7 +30,7 @@ export const PlainButton = ({
   <button
     className={clsx(
       round ? "rounded-full" : "rounded-lg",
-      "bg-transparent p-2 hover:bg-neutral-100 active:bg-neutral-200",
+      "bg-transparent p-2 not-disabled:hover:bg-neutral-100 not-disabled:active:bg-neutral-200 disabled:text-neutral-300",
       className,
     )}
     {...props}

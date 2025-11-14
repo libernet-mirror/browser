@@ -1,23 +1,42 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
 
+function makeEventHandler<Listener extends (...args: never[]) => void>(
+  name: string,
+): (listener: Listener) => () => void {
+  return (listener) => {
+    const lowLevelListener = (_event: IpcRendererEvent, ...args: never[]) => {
+      listener(...args);
+    };
+    ipcRenderer.on(name, lowLevelListener);
+    return () => {
+      ipcRenderer.off(name, lowLevelListener);
+    };
+  };
+}
+
+type NavigationListener = () => void;
 type UrlListener = (url: string) => void;
+type ViewListener = (view: string) => void;
 
 contextBridge.exposeInMainWorld("libernet", {
   getView: () => ipcRenderer.invoke("root/get-view"),
   getUrl: () => ipcRenderer.invoke("root/get-url"),
   setUrl: (url: string) => ipcRenderer.invoke("root/set-url", url),
-  onUrl: (listener: UrlListener) => {
-    const lowLevelListener = (_event: IpcRendererEvent, url: string) => {
-      listener(url);
-    };
-    ipcRenderer.on("root/url", lowLevelListener);
-    return () => {
-      ipcRenderer.off("root/url", lowLevelListener);
-    };
-  },
+  onUrl: makeEventHandler<UrlListener>("root/url"),
+  onViewChange: makeEventHandler<ViewListener>("root/view-change"),
+  onStartNavigation: makeEventHandler<NavigationListener>(
+    "root/start-navigation",
+  ),
+  onFinishNavigation: makeEventHandler<NavigationListener>(
+    "root/finish-navigation",
+  ),
   navigateBack: () => ipcRenderer.invoke("root/back"),
   navigateForward: () => ipcRenderer.invoke("root/forward"),
   startRefresh: () => ipcRenderer.invoke("root/refresh"),
+  cancelNavigation: () => ipcRenderer.invoke("root/cancel-navigation"),
+  getNodeList: () => ipcRenderer.invoke("net/get-node-list"),
+  setNodeList: (nodes: string[]) =>
+    ipcRenderer.invoke("net/set-node-list", nodes),
   getWalletStatus: () => ipcRenderer.invoke("wallet/get-status"),
   createWallet: (passwords: string[]) =>
     ipcRenderer.invoke("wallet/create", passwords),

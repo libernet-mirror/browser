@@ -30,15 +30,25 @@ import {
 } from "./utilities";
 import { Wallet } from "./wallet";
 
-const BOOTSTRAP_NODE_ADDRESS = "localhost:4443";
+export const DEFAULT_BOOTSTRAP_NODE_ADDRESSES: string[] = ["localhost:4443"];
 
 const packageDefinition = loadPackageDefinition(libernetPackageDefinition)
   .libernet as GrpcObject;
 
 export class Libernet {
+  private static _bootstrapNodes = DEFAULT_BOOTSTRAP_NODE_ADDRESSES;
+
   private static _socketCounter = 0;
 
   private readonly _client;
+
+  public static getBootstrapNodes(): string[] {
+    return Libernet._bootstrapNodes;
+  }
+
+  public static setBootstrapNodes(addresses: string[]): void {
+    Libernet._bootstrapNodes = addresses;
+  }
 
   private static _getUnixSocketPath(target: string): string {
     return path.join(
@@ -60,10 +70,14 @@ export class Libernet {
   }
 
   public static async create(account: Account): Promise<Libernet> {
+    const target =
+      Libernet._bootstrapNodes[
+        Math.floor(Math.random() * Libernet._bootstrapNodes.length)
+      ];
     const proxy = await Proxy.create(
       account,
-      Libernet._getUnixSocketPath(BOOTSTRAP_NODE_ADDRESS),
-      BOOTSTRAP_NODE_ADDRESS,
+      Libernet._getUnixSocketPath(target),
+      target,
     );
     return new Libernet(account, proxy);
   }
@@ -206,6 +220,13 @@ class LibernetManager {
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   private constructor() {}
 
+  public async setBootstrapNodes(addresses: string[]): Promise<void> {
+    Libernet.setBootstrapNodes(addresses.sort());
+    const accountIndex = this._accountIndex;
+    await this.destroy();
+    await this.setAccount(accountIndex);
+  }
+
   public async setAccount(accountIndex: number): Promise<void> {
     if (accountIndex !== this._accountIndex) {
       await this.destroy();
@@ -238,6 +259,14 @@ class LibernetManager {
       this._account = null;
     }
   }
+}
+
+export function getBootstrapNodes(): string[] {
+  return Libernet.getBootstrapNodes();
+}
+
+export async function setBootstrapNodes(addresses: string[]): Promise<void> {
+  await LibernetManager.INSTANCE.setBootstrapNodes(addresses);
 }
 
 export async function setLibernetAccount(accountIndex: number): Promise<void> {

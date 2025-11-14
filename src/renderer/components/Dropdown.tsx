@@ -77,7 +77,7 @@ export const DropdownItem = ({
         disabled ? "cursor-default" : "cursor-pointer",
         "px-2 py-1",
         disabled && "text-neutral-400",
-        "first:rounded-t-sm last:rounded-b-sm hover:bg-neutral-100",
+        "rounded-sm hover:bg-neutral-100",
         !disabled && "active:bg-neutral-200",
       )}
       onClick={() => {

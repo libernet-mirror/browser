@@ -24,6 +24,7 @@ const INITIAL_WIDTH = 800;
 const INITIAL_HEIGHT = 600;
 const CONTROL_BAR_HEIGHT = 45;
 
+const SYSTEM_URL_SETTINGS = "liber://settings";
 const SYSTEM_URL_WALLET = "liber://wallet";
 
 const DEFAULT_HOME_ADDRESS = "https://google.com";
@@ -54,20 +55,21 @@ const createWindow = async () => {
   });
   controlBar.webContents.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 
-  let viewType: "web" | "system" = "web";
+  let viewType: "web" | "settings" | "wallet" = "web";
   let currentView: WebContentsView | null = null;
   let currentUrl = DEFAULT_HOME_ADDRESS;
 
-  const setSystemView = async () => {
-    if (viewType !== "system") {
+  const setSystemView = async (systemAddress: "settings" | "wallet") => {
+    console.log(`setSystemView(${JSON.stringify(systemAddress)})`);
+    if (viewType === "web") {
       if (currentView) {
         currentView.removeAllListeners();
         mainWindow.contentView.removeChildView(currentView);
         currentView.webContents.close();
         currentView = null;
       }
-      viewType = "system";
     }
+    viewType = systemAddress;
     if (!currentView) {
       currentView = new WebContentsView({
         webPreferences: {
@@ -86,12 +88,14 @@ const createWindow = async () => {
       mainWindow.contentView.addChildView(currentView);
       mainWindow.contentView.addChildView(controlBar);
     }
-    currentUrl = SYSTEM_URL_WALLET;
+    currentUrl = "liber://" + systemAddress;
     controlBar.webContents.send("root/url", currentUrl);
+    currentView.webContents.send("root/view-change", systemAddress);
     await currentView.webContents.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
   };
 
   const setWebView = async (url: string) => {
+    console.log(`setWebView(${JSON.stringify(url)})`);
     if (!URL_PROTOCOL_PATTERN.test(url)) {
       url = "http://" + url;
     }
@@ -137,6 +141,12 @@ const createWindow = async () => {
           if (isMainFrame) {
             controlBar.webContents.send("root/url", (currentUrl = url));
           }
+        })
+        .on("did-start-loading", () => {
+          controlBar.webContents.send("root/start-navigation");
+        })
+        .on("did-stop-loading", () => {
+          controlBar.webContents.send("root/finish-navigation");
         });
       mainWindow.contentView.addChildView(currentView);
       mainWindow.contentView.addChildView(controlBar);
@@ -162,7 +172,10 @@ const createWindow = async () => {
   ipcMain.handle("root/set-url", async (_, url: string) => {
     switch (url) {
       case SYSTEM_URL_WALLET:
-        await setSystemView();
+        await setSystemView("wallet");
+        break;
+      case SYSTEM_URL_SETTINGS:
+        await setSystemView("settings");
         break;
       default:
         await setWebView(url);
@@ -194,6 +207,10 @@ const createWindow = async () => {
 
   ipcMain.handle("root/refresh", () => {
     currentView?.webContents.reload();
+  });
+
+  ipcMain.handle("root/cancel-navigation", () => {
+    currentView?.webContents.stop();
   });
 
   mainWindow.on("resize", () => {
@@ -233,7 +250,12 @@ app.on("activate", () => {
 // In this file you can include the rest of your app's specific main process code. You can also put
 // them in separate files and import them here.
 
-import { libernet, setLibernetAccount } from "./libernet";
+import {
+  getBootstrapNodes,
+  libernet,
+  setBootstrapNodes,
+  setLibernetAccount,
+} from "./libernet";
 import { Mutex } from "./mutex";
 import { Wallet, WalletData } from "./wallet";
 
@@ -242,6 +264,12 @@ const walletFileMutex = new Mutex();
 function getWalletPath(): string {
   return path.join(app.getPath("userData"), "wallet.json");
 }
+
+ipcMain.handle("net/get-node-list", () => getBootstrapNodes());
+
+ipcMain.handle("net/set-node-list", async (_, addresses: string[]) => {
+  await setBootstrapNodes(addresses);
+});
 
 ipcMain.handle("wallet/get-status", async () => {
   if (Wallet.isLoaded()) {
