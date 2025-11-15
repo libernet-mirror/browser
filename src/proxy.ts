@@ -41,7 +41,7 @@ export class Proxy {
       const privateKey = this._account.export_ecdsa_private_key_pem();
       const notBefore = Date.now() - 1000 * 3600 * 24;
       const notAfter = Date.now() + 1000 * 3600 * 24 * 365;
-      const certificate = this._account.generate_ecdsa_certificate_pem(
+      const certificate = this._account.generate_client_ecdsa_certificate_pem(
         BigInt(notBefore),
         BigInt(notAfter),
       );
@@ -60,6 +60,7 @@ export class Proxy {
           const remote = this._account.verify_ssl_certificate(
             derToPem(peerCertificate.raw, "CERTIFICATE"),
             BigInt(Date.now()),
+            this._remoteHost,
           );
           console.log(
             `connected to ${remote.address()}\n          as ${this._account.address()}`,
@@ -68,7 +69,8 @@ export class Proxy {
           this._localSocket.resume();
           this._localSocket.pipe(this._tlsSocket);
           this._tlsSocket.pipe(this._localSocket);
-        } catch {
+        } catch (error) {
+          console.error(error);
           try {
             this._tlsSocket.destroy();
           } catch {
