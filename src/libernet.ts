@@ -157,7 +157,7 @@ export class Libernet {
     address: string,
     response: GetAccountResponse,
   ): Promise<AccountInfo> {
-    const proofProto = unpackAny<MerkleProofProto>(response.payload);
+    const proofProto = response.account_proof;
     const blockDescriptor = proofProto.block_descriptor;
     const proto = unpackAny<AccountInfoProto>(proofProto.value);
     const info = await Libernet._decodeAccountInfo(

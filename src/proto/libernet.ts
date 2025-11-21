@@ -4,7 +4,11 @@ import type { MessageTypeDefinition } from '@grpc/proto-loader';
 import type { Any as _google_protobuf_Any, Any__Output as _google_protobuf_Any__Output } from './google/protobuf/Any';
 import type { Timestamp as _google_protobuf_Timestamp, Timestamp__Output as _google_protobuf_Timestamp__Output } from './google/protobuf/Timestamp';
 import type { AccountInfo as _libernet_AccountInfo, AccountInfo__Output as _libernet_AccountInfo__Output } from './libernet/AccountInfo';
+import type { AccountSubscriptionRequest as _libernet_AccountSubscriptionRequest, AccountSubscriptionRequest__Output as _libernet_AccountSubscriptionRequest__Output } from './libernet/AccountSubscriptionRequest';
+import type { AccountSubscriptionResponse as _libernet_AccountSubscriptionResponse, AccountSubscriptionResponse__Output as _libernet_AccountSubscriptionResponse__Output } from './libernet/AccountSubscriptionResponse';
 import type { BlockDescriptor as _libernet_BlockDescriptor, BlockDescriptor__Output as _libernet_BlockDescriptor__Output } from './libernet/BlockDescriptor';
+import type { BlockSubscriptionRequest as _libernet_BlockSubscriptionRequest, BlockSubscriptionRequest__Output as _libernet_BlockSubscriptionRequest__Output } from './libernet/BlockSubscriptionRequest';
+import type { BlockSubscriptionResponse as _libernet_BlockSubscriptionResponse, BlockSubscriptionResponse__Output as _libernet_BlockSubscriptionResponse__Output } from './libernet/BlockSubscriptionResponse';
 import type { BoundTransaction as _libernet_BoundTransaction, BoundTransaction__Output as _libernet_BoundTransaction__Output } from './libernet/BoundTransaction';
 import type { BroadcastBlockRequest as _libernet_BroadcastBlockRequest, BroadcastBlockRequest__Output as _libernet_BroadcastBlockRequest__Output } from './libernet/BroadcastBlockRequest';
 import type { BroadcastBlockResponse as _libernet_BroadcastBlockResponse, BroadcastBlockResponse__Output as _libernet_BroadcastBlockResponse__Output } from './libernet/BroadcastBlockResponse';
@@ -43,7 +47,11 @@ export interface ProtoGrpcType {
   }
   libernet: {
     AccountInfo: MessageTypeDefinition<_libernet_AccountInfo, _libernet_AccountInfo__Output>
+    AccountSubscriptionRequest: MessageTypeDefinition<_libernet_AccountSubscriptionRequest, _libernet_AccountSubscriptionRequest__Output>
+    AccountSubscriptionResponse: MessageTypeDefinition<_libernet_AccountSubscriptionResponse, _libernet_AccountSubscriptionResponse__Output>
     BlockDescriptor: MessageTypeDefinition<_libernet_BlockDescriptor, _libernet_BlockDescriptor__Output>
+    BlockSubscriptionRequest: MessageTypeDefinition<_libernet_BlockSubscriptionRequest, _libernet_BlockSubscriptionRequest__Output>
+    BlockSubscriptionResponse: MessageTypeDefinition<_libernet_BlockSubscriptionResponse, _libernet_BlockSubscriptionResponse__Output>
     BoundTransaction: MessageTypeDefinition<_libernet_BoundTransaction, _libernet_BoundTransaction__Output>
     BroadcastBlockRequest: MessageTypeDefinition<_libernet_BroadcastBlockRequest, _libernet_BroadcastBlockRequest__Output>
     BroadcastBlockResponse: MessageTypeDefinition<_libernet_BroadcastBlockResponse, _libernet_BroadcastBlockResponse__Output>
