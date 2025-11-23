@@ -82,17 +82,42 @@ const Navbar = ({
   );
 };
 
-const Balance = ({ account }: { account: AccountInfo }) => (
-  <Card className="mx-auto mt-3">
-    <p className="prose lg:prose-lg">Hello, {account.address}.</p>
-    <p className="prose lg:prose-lg">
-      Your LIB balance is: <strong>{formatBalance(account.balance)}</strong>
-      <br />
-      (proven at block #{account.blockDescriptor.blockNumber} as of{" "}
-      {account.blockDescriptor.timestamp.toLocaleString()})
-    </p>
-  </Card>
-);
+const Balance = ({ accountAddress }: { accountAddress: string }) => {
+  const [account, setAccount] = useState<AccountInfo | null>(null);
+  useAsyncEffect(async () => {
+    setAccount(await libernet().getAccountByAddress(accountAddress));
+    const offAccountChange = libernet().onAccountChange((account) => {
+      if (account.address === accountAddress) {
+        setAccount(account);
+      }
+    }, accountAddress);
+    await libernet().watchAccount(accountAddress);
+    return async () => {
+      offAccountChange();
+      await libernet().unwatchAccount(accountAddress);
+    };
+  }, [accountAddress]);
+  if (account) {
+    return (
+      <Card className="mx-auto mt-3">
+        <p className="prose lg:prose-lg">Hello, {account.address}.</p>
+        <p className="prose lg:prose-lg">
+          Your LIB balance is: <strong>{formatBalance(account.balance)}</strong>
+          <br />
+          (proven at block #{account.blockDescriptor.blockNumber} as of{" "}
+          {account.blockDescriptor.timestamp.toLocaleString()})
+        </p>
+      </Card>
+    );
+  } else {
+    return (
+      <Card className="mx-auto mt-3">
+        <p className="prose lg:prose-lg">Hello, {accountAddress}.</p>
+        <p className="prose lg:prose-lg">{/* TODO: balance skeleton */}</p>
+      </Card>
+    );
+  }
+};
 
 const hasAssets = (account: AccountInfo) =>
   account.balance !== 0n || account.stakingBalance !== 0n;
@@ -130,7 +155,7 @@ const Hello = () => {
           }
         }}
       />
-      <Balance account={accounts[currentAccountIndex]} />
+      <Balance accountAddress={accounts[currentAccountIndex].address} />
     </div>
   );
 };

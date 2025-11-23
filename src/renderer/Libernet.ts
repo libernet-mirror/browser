@@ -1,4 +1,4 @@
-import { AccountInfo } from "../data";
+import { type AccountInfo } from "../data";
 
 export type ContentView = "control" | "web" | "settings" | "wallet";
 
@@ -23,6 +23,12 @@ export interface LibernetAPI {
   getAccountAddress(index: number): Promise<string>;
   getAccountByNumber(index: number): Promise<AccountInfo>;
   getAccountByAddress(address: string): Promise<AccountInfo>;
+  watchAccount(address: string): Promise<void>;
+  unwatchAccount(address: string): Promise<void>;
+  onAccountChange(
+    listener: (account: AccountInfo) => void,
+    address: string,
+  ): () => void;
 }
 
 export function libernet(): LibernetAPI {

@@ -1,5 +1,7 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
 
+import { type AccountInfo } from "./data";
+
 function makeEventHandler<Listener extends (...args: never[]) => void>(
   name: string,
 ): (listener: Listener) => () => void {
@@ -17,6 +19,7 @@ function makeEventHandler<Listener extends (...args: never[]) => void>(
 type NavigationListener = () => void;
 type UrlListener = (url: string) => void;
 type ViewListener = (view: string) => void;
+type AccountListener = (account: AccountInfo) => void;
 
 contextBridge.exposeInMainWorld("libernet", {
   getView: () => ipcRenderer.invoke("root/get-view"),
@@ -50,4 +53,9 @@ contextBridge.exposeInMainWorld("libernet", {
     ipcRenderer.invoke("wallet/get-account-by-number", index),
   getAccountByAddress: (address: string) =>
     ipcRenderer.invoke("wallet/get-account-by-address", address),
+  watchAccount: (address: string) =>
+    ipcRenderer.invoke("net/watch-account", address),
+  unwatchAccount: (address: string) =>
+    ipcRenderer.invoke("net/unwatch-account", address),
+  onAccountChange: makeEventHandler<AccountListener>(`net/watch-account`),
 });

@@ -5,6 +5,7 @@ import { app } from "electron";
 import {
   credentials as grpcCredentials,
   loadPackageDefinition,
+  type ClientReadableStream,
   type GrpcObject,
   type ServiceClientConstructor,
 } from "@grpc/grpc-js";
@@ -12,6 +13,7 @@ import {
 import type { Account, TernaryMerkleProof } from "../crypto-bindings/crypto";
 
 import type { AccountInfo as AccountInfoProto } from "./proto/libernet/AccountInfo";
+import type { AccountSubscriptionResponse } from "./proto/libernet/AccountSubscriptionResponse";
 import type { BlockDescriptor as BlockDescriptorProto } from "./proto/libernet/BlockDescriptor";
 import type { GetAccountResponse } from "./proto/libernet/GetAccountResponse";
 import type { MerkleProof as MerkleProofProto } from "./proto/libernet/MerkleProof";
@@ -35,12 +37,43 @@ export const DEFAULT_BOOTSTRAP_NODE_ADDRESSES: string[] = ["localhost:4443"];
 const packageDefinition = loadPackageDefinition(libernetPackageDefinition)
   .libernet as GrpcObject;
 
+export type AccountListener = (account: AccountInfo) => void;
+
+class AccountWatcher {
+  private _watchCount = 1;
+
+  public constructor(
+    private readonly _call: ClientReadableStream<AccountSubscriptionResponse>,
+    accountCallback: (accountProof: MerkleProofProto) => void,
+    finishCallback: (error?: Error) => void,
+  ) {
+    this._call
+      .on("data", (response: AccountSubscriptionResponse) => {
+        const proofs = response.account_proof;
+        accountCallback(proofs[proofs.length - 1]);
+      })
+      .on("end", finishCallback)
+      .on("error", finishCallback);
+  }
+
+  public ref(): void {
+    this._watchCount++;
+  }
+
+  public unref(): boolean {
+    return --this._watchCount < 1;
+  }
+}
+
 export class Libernet {
   private static _bootstrapNodes = DEFAULT_BOOTSTRAP_NODE_ADDRESSES;
 
   private static _socketCounter = 0;
 
   private readonly _client;
+  private readonly _accountWatchers = new Map<string, AccountWatcher>();
+
+  private readonly _accountListeners = new Set<AccountListener>();
 
   public static getBootstrapNodes(): string[] {
     return Libernet._bootstrapNodes;
@@ -153,11 +186,10 @@ export class Libernet {
     );
   }
 
-  private static async _processAccountResponse(
+  private static async _processAccountProof(
     address: string,
-    response: GetAccountResponse,
+    proofProto: MerkleProofProto,
   ): Promise<AccountInfo> {
-    const proofProto = response.account_proof;
     const blockDescriptor = proofProto.block_descriptor;
     const proto = unpackAny<AccountInfoProto>(proofProto.value);
     const info = await Libernet._decodeAccountInfo(
@@ -189,7 +221,7 @@ export class Libernet {
           if (error) {
             reject(error);
           } else {
-            Libernet._processAccountResponse(address, response)
+            Libernet._processAccountProof(address, response.account_proof)
               .then(resolve)
               .catch(reject);
           }
@@ -204,6 +236,61 @@ export class Libernet {
     );
   }
 
+  public watchAccount(address: string): void {
+    const key = address.toLowerCase();
+    let watcher = this._accountWatchers.get(key);
+    if (watcher) {
+      watcher.ref();
+      return;
+    }
+    const call = this._client.subscribeToAccount({
+      account_address: { value: encodeScalar(address) },
+      every_block: true,
+    });
+    watcher = new AccountWatcher(
+      call,
+      async (accountProof) => {
+        let proof;
+        try {
+          proof = await Libernet._processAccountProof(address, accountProof);
+        } catch (error) {
+          console.error("invalid account proof");
+          console.error(error);
+          return;
+        }
+        for (const listener of this._accountListeners) {
+          try {
+            listener(proof);
+          } catch (error) {
+            console.error(error);
+          }
+        }
+      },
+      () => {
+        this._accountWatchers.delete(key);
+      },
+    );
+    this._accountWatchers.set(key, watcher);
+  }
+
+  public unwatchAccount(address: string): void {
+    const key = address.toLowerCase();
+    const watcher = this._accountWatchers.get(key);
+    if (watcher?.unref()) {
+      this._accountWatchers.delete(key);
+    }
+  }
+
+  public onAccountProof(listener: AccountListener): Libernet {
+    this._accountListeners.add(listener);
+    return this;
+  }
+
+  public offAccountProof(listener: AccountListener): Libernet {
+    this._accountListeners.delete(listener);
+    return this;
+  }
+
   public async destroy(): Promise<void> {
     await this._proxy.destroy();
   }
@@ -211,6 +298,8 @@ export class Libernet {
 
 class LibernetManager {
   public static readonly INSTANCE = new LibernetManager();
+
+  private readonly _accountListeners = new Set<AccountListener>();
 
   private readonly _mutex = new Mutex();
   private _accountIndex = 0;
@@ -225,6 +314,16 @@ class LibernetManager {
     const accountIndex = this._accountIndex;
     await this.destroy();
     await this.setAccount(accountIndex);
+  }
+
+  public onAccountProof(listener: AccountListener): LibernetManager {
+    this._accountListeners.add(listener);
+    return this;
+  }
+
+  public offAccountProof(listener: AccountListener): LibernetManager {
+    this._accountListeners.delete(listener);
+    return this;
   }
 
   public async setAccount(accountIndex: number): Promise<void> {
@@ -244,6 +343,15 @@ class LibernetManager {
       await this._mutex.locked(async () => {
         if (!this._libernet && accountIndex === this._accountIndex) {
           this._libernet = await Libernet.create(this._account);
+          this._libernet.onAccountProof((proof) => {
+            for (const listener of this._accountListeners) {
+              try {
+                listener(proof);
+              } catch (error) {
+                console.error(error);
+              }
+            }
+          });
         }
       });
     }
@@ -271,6 +379,14 @@ export async function setBootstrapNodes(addresses: string[]): Promise<void> {
 
 export async function setLibernetAccount(accountIndex: number): Promise<void> {
   await LibernetManager.INSTANCE.setAccount(accountIndex);
+}
+
+export function onAccountProof(listener: AccountListener): void {
+  LibernetManager.INSTANCE.onAccountProof(listener);
+}
+
+export function offAccountProof(listener: AccountListener): void {
+  LibernetManager.INSTANCE.offAccountProof(listener);
 }
 
 export function libernet(...args: number[]): Promise<Libernet> {
