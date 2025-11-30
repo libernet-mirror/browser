@@ -38,3 +38,12 @@ export class AccountInfo {
     );
   }
 }
+
+export class TransactionInfo {
+  public constructor(
+    public readonly hash: string,
+    public readonly blockDescriptor: BlockDescriptor,
+    public readonly parentTransactionHash: string,
+    public readonly signerAddress: string,
+  ) {}
+}

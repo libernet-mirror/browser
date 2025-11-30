@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { type AccountInfo } from "../data";
+import { type AccountInfo, type TransactionInfo } from "../data";
 
 import { Card } from "./components/Card";
 import {
@@ -119,6 +119,44 @@ const Balance = ({ accountAddress }: { accountAddress: string }) => {
   }
 };
 
+const Transactions = ({ accountAddress }: { accountAddress: string }) => {
+  const [transactions, setTransactions] = useState<TransactionInfo[] | null>(
+    null,
+  );
+  useAsyncEffect(async () => {
+    // TODO: fetch data
+  }, [accountAddress]);
+  return (
+    <Card className="m-3 grow">
+      <table>
+        <thead>
+          <tr>
+            <th>date &amp; time</th>
+            <th>from</th>
+            <th>to</th>
+            <th>type</th>
+            <th>amount</th>
+            <th>tx hash</th>
+          </tr>
+        </thead>
+        <tbody>
+          {transactions === null ? (
+            <tr>
+              <td colSpan={6}></td>
+            </tr>
+          ) : transactions.length > 0 ? (
+            transactions.map((transaction) => <tr>{/* TODO */}</tr>)
+          ) : (
+            <tr>
+              <td colSpan={6}></td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </Card>
+  );
+};
+
 const hasAssets = (account: AccountInfo) =>
   account.balance !== 0n || account.stakingBalance !== 0n;
 
@@ -156,6 +194,7 @@ const Hello = () => {
         }}
       />
       <Balance accountAddress={accounts[currentAccountIndex].address} />
+      <Transactions accountAddress={accounts[currentAccountIndex].address} />
     </div>
   );
 };
