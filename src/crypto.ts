@@ -2,6 +2,7 @@ import { Mutex } from "./mutex";
 
 import type {
   poseidon_hash,
+  BinaryMerkleProof32,
   TernaryMerkleProof,
   Wallet,
 } from "../crypto-bindings/crypto";
@@ -49,6 +50,18 @@ class CryptoLoader {
 export async function poseidonHash(inputs: string[]): Promise<string> {
   const fn = await CryptoLoader.load<typeof poseidon_hash>("poseidon_hash");
   return fn(inputs);
+}
+
+export async function createBinaryMerkleProof32(
+  key: string,
+  value: string,
+  rootHash: string,
+  hashes: string[],
+): Promise<BinaryMerkleProof32> {
+  const cls = await CryptoLoader.load<typeof BinaryMerkleProof32>(
+    "BinaryMerkleProof32",
+  );
+  return cls.from_compressed(key, value, rootHash, hashes);
 }
 
 export async function createTernaryMerkleProof(

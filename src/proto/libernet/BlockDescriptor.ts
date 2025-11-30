@@ -11,7 +11,7 @@ export interface BlockDescriptor {
   'previous_block_hash'?: (_libernet_Scalar | null);
   'timestamp'?: (_google_protobuf_Timestamp | null);
   'network_topology_root_hash'?: (_libernet_Scalar | null);
-  'last_transaction_hash'?: (_libernet_Scalar | null);
+  'transactions_root_hash'?: (_libernet_Scalar | null);
   'accounts_root_hash'?: (_libernet_Scalar | null);
   'program_storage_root_hash'?: (_libernet_Scalar | null);
 }
@@ -23,7 +23,7 @@ export interface BlockDescriptor__Output {
   'previous_block_hash': (_libernet_Scalar__Output | null);
   'timestamp': (_google_protobuf_Timestamp__Output | null);
   'network_topology_root_hash': (_libernet_Scalar__Output | null);
-  'last_transaction_hash': (_libernet_Scalar__Output | null);
+  'transactions_root_hash': (_libernet_Scalar__Output | null);
   'accounts_root_hash': (_libernet_Scalar__Output | null);
   'program_storage_root_hash': (_libernet_Scalar__Output | null);
 }

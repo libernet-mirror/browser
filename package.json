@@ -1,7 +1,8 @@
 {
-  "name": "@libernet/browser",
-  "productName": "browser",
+  "name": "libernet",
   "version": "0.1.0",
+  "private": true,
+  "productName": "libernet",
   "description": "The Libernet Browser.",
   "main": ".webpack/main",
   "scripts": {

@@ -5,6 +5,16 @@ import type { Signature as _libernet_Signature, Signature__Output as _libernet_S
 import type { Scalar as _libernet_Scalar, Scalar__Output as _libernet_Scalar__Output } from '../libernet/Scalar';
 import type { Long } from '@grpc/proto-loader';
 
+export interface _libernet_Transaction_BlockReward {
+  'recipient'?: (_libernet_Scalar | null);
+  'amount'?: (_libernet_Scalar | null);
+}
+
+export interface _libernet_Transaction_BlockReward__Output {
+  'recipient': (_libernet_Scalar__Output | null);
+  'amount': (_libernet_Scalar__Output | null);
+}
+
 export interface _libernet_Transaction_CreateProgram {
   'bytecode'?: (Buffer | Uint8Array | string);
 }
@@ -16,17 +26,19 @@ export interface _libernet_Transaction_CreateProgram__Output {
 export interface _libernet_Transaction_Payload {
   'chain_id'?: (number | string | Long);
   'nonce'?: (number | string | Long);
+  'block_reward'?: (_libernet_Transaction_BlockReward | null);
   'send_coins'?: (_libernet_Transaction_SendCoins | null);
   'create_program'?: (_libernet_Transaction_CreateProgram | null);
-  'transaction'?: "send_coins"|"create_program";
+  'transaction'?: "block_reward"|"send_coins"|"create_program";
 }
 
 export interface _libernet_Transaction_Payload__Output {
   'chain_id': (string);
   'nonce': (string);
+  'block_reward'?: (_libernet_Transaction_BlockReward__Output | null);
   'send_coins'?: (_libernet_Transaction_SendCoins__Output | null);
   'create_program'?: (_libernet_Transaction_CreateProgram__Output | null);
-  'transaction'?: "send_coins"|"create_program";
+  'transaction'?: "block_reward"|"send_coins"|"create_program";
 }
 
 export interface _libernet_Transaction_SendCoins {

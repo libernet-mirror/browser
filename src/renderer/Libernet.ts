@@ -1,4 +1,8 @@
-import { type AccountInfo } from "../data";
+import {
+  type AccountInfo,
+  type TransactionInfo,
+  type TransactionQueryParams,
+} from "../data";
 
 export type ContentView = "control" | "web" | "settings" | "wallet";
 
@@ -29,6 +33,8 @@ export interface LibernetAPI {
     listener: (account: AccountInfo) => void,
     address: string,
   ): () => void;
+  getTransaction(transactionHash: string): Promise<TransactionInfo>;
+  queryTransactions(params: TransactionQueryParams): Promise<TransactionInfo[]>;
 }
 
 export function libernet(): LibernetAPI {

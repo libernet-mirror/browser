@@ -17,6 +17,10 @@ export function derToPem(der: Buffer, label: string): string {
   return `-----BEGIN ${label}-----\n${formatted}\n-----END ${label}-----\n`;
 }
 
+export function toScalar(n: number): string {
+  return "0x" + n.toString(16).toLowerCase().padStart(64, "0");
+}
+
 export function decodeScalar(buffer: string | Buffer | Uint8Array): string {
   if (typeof buffer === "string") {
     throw new Error("unsupported format");
@@ -32,6 +36,8 @@ export function decodeScalar(buffer: string | Buffer | Uint8Array): string {
       .reverse()
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("")
+      .toLowerCase()
+      .padStart(64, "0")
   );
 }
 
@@ -43,7 +49,8 @@ export function encodeScalar(hex: string): number[] {
   const body = match[1].padStart(64, "0");
   const bytes = [];
   for (let i = 0; i < 32; i++) {
-    bytes.push(parseInt(body.substring((31 - i) * 2, 2), 16));
+    const chars = body.substring((31 - i) * 2, (32 - i) * 2);
+    bytes.push(parseInt(chars, 16));
   }
   return bytes;
 }
@@ -52,7 +59,7 @@ export function decodeBigInt(buffer: string | Buffer | Uint8Array): bigint {
   if (typeof buffer === "string") {
     throw new Error("unsupported format");
   }
-  return Array.from(buffer).reduce((a, b) => a * 10n + BigInt(b), 0n);
+  return Array.from(buffer).reduceRight((a, b) => a * 256n + BigInt(b), 0n);
 }
 
 export function encodeBigInt(value: bigint): number[] {

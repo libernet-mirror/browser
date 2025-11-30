@@ -9,7 +9,7 @@ export class BlockDescriptor {
     public readonly previousBlockHash: string,
     public readonly timestamp: Date,
     public readonly networkTopologyRootHash: string,
-    public readonly lastTransactionHash: string,
+    public readonly transactionsRootHash: string,
     public readonly accountsRootHash: string,
     public readonly programStorageRootHash: string,
   ) {}
@@ -37,4 +37,60 @@ export class AccountInfo {
       this.stakingBalance,
     );
   }
+}
+
+export type TransactionType = "block_reward" | "send_coins" | "create_program";
+
+export const TRANSACTION_TYPES = new Set<TransactionType>([
+  "block_reward",
+  "send_coins",
+  "create_program",
+]);
+
+export interface BlockRewardTransactionPayload {
+  recipient: string;
+  amount: string;
+}
+
+export interface CoinTransferTransactionPayload {
+  recipient: string;
+  amount: string;
+}
+
+export interface ProgramCreationTransactionPayload {
+  bytecode: ArrayBuffer;
+}
+
+export type TransactionPayload =
+  | BlockRewardTransactionPayload
+  | CoinTransferTransactionPayload
+  | ProgramCreationTransactionPayload;
+
+export class TransactionInfo {
+  public constructor(
+    public readonly hash: string,
+    public readonly blockDescriptor: BlockDescriptor,
+    public readonly signerAddress: string,
+    public readonly chainId: number,
+    public readonly nonce: number,
+    public readonly type: TransactionType,
+    public readonly payload: TransactionPayload,
+  ) {
+    if (chainId !== blockDescriptor.chainId) {
+      throw new Error(
+        `invalid network ID (got ${chainId}, want ${blockDescriptor.chainId})`,
+      );
+    }
+  }
+}
+
+export type SortOrder = "ascending" | "descending";
+
+export interface TransactionQueryParams {
+  from?: string;
+  to?: string;
+  startBlockHash?: string;
+  endBlockHash?: string;
+  sortOrder?: SortOrder;
+  maxCount?: number;
 }

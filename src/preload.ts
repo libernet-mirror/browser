@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
 
-import { type AccountInfo } from "./data";
+import { type AccountInfo, type TransactionQueryParams } from "./data";
 
 function makeEventHandler<Listener extends (...args: never[]) => void>(
   name: string,
@@ -58,4 +58,8 @@ contextBridge.exposeInMainWorld("libernet", {
   unwatchAccount: (address: string) =>
     ipcRenderer.invoke("net/unwatch-account", address),
   onAccountChange: makeEventHandler<AccountListener>(`net/watch-account`),
+  getTransaction: (transactionHash: string) =>
+    ipcRenderer.invoke("net/get-transaction", transactionHash),
+  queryTransactions: (params: TransactionQueryParams) =>
+    ipcRenderer.invoke("net/query-transactions", params),
 });

@@ -1,11 +1,11 @@
 // Original file: proto/libernet.proto
 
-import type { BoundTransaction as _libernet_BoundTransaction, BoundTransaction__Output as _libernet_BoundTransaction__Output } from '../libernet/BoundTransaction';
+import type { MerkleProof as _libernet_MerkleProof, MerkleProof__Output as _libernet_MerkleProof__Output } from '../libernet/MerkleProof';
 
 export interface GetTransactionResponse {
-  'transaction'?: (_libernet_BoundTransaction | null);
+  'transaction_proof'?: (_libernet_MerkleProof | null);
 }
 
 export interface GetTransactionResponse__Output {
-  'transaction': (_libernet_BoundTransaction__Output | null);
+  'transaction_proof': (_libernet_MerkleProof__Output | null);
 }

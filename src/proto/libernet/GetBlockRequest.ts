@@ -4,8 +4,10 @@ import type { Scalar as _libernet_Scalar, Scalar__Output as _libernet_Scalar__Ou
 
 export interface GetBlockRequest {
   'block_hash'?: (_libernet_Scalar | null);
+  'get_all_transaction_hashes'?: (boolean);
 }
 
 export interface GetBlockRequest__Output {
   'block_hash': (_libernet_Scalar__Output | null);
+  'get_all_transaction_hashes': (boolean);
 }

@@ -287,6 +287,7 @@ app.on("activate", () => {
 
 import { Mutex } from "./mutex";
 import { Wallet, WalletData } from "./wallet";
+import { TransactionQueryParams } from "./data";
 
 const walletFileMutex = new Mutex();
 
@@ -371,3 +372,15 @@ ipcMain.handle("net/watch-account", async (_, address: string) => {
 ipcMain.handle("net/unwatch-account", async (_, address: string) => {
   (await libernet()).unwatchAccount(address);
 });
+
+ipcMain.handle(
+  "net/get-transaction",
+  async (_, transactionHash: string) =>
+    await (await libernet()).getTransaction(transactionHash),
+);
+
+ipcMain.handle(
+  "net/query-transactions",
+  async (_, params: TransactionQueryParams) =>
+    await (await libernet()).queryTransactions(params),
+);

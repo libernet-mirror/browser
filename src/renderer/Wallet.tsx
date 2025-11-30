@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { type AccountInfo } from "../data";
+import { type AccountInfo, type TransactionInfo } from "../data";
 
 import { Card } from "./components/Card";
 import {
@@ -9,6 +9,16 @@ import {
   DropdownItem,
   DropdownMenu,
 } from "./components/Dropdown";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHeader,
+  TableHeaderCell,
+  TableRow,
+} from "./components/Tables";
+import { Tooltip, TooltipContainer } from "./components/Tooltip";
+import { CopyIcon } from "./icons/Copy";
 
 import { jazzicon } from "./Jazzicon";
 import { libernet } from "./Libernet";
@@ -84,6 +94,7 @@ const Navbar = ({
 
 const Balance = ({ accountAddress }: { accountAddress: string }) => {
   const [account, setAccount] = useState<AccountInfo | null>(null);
+  const [tooltip, setTooltip] = useState<string | null>(null);
   useAsyncEffect(async () => {
     setAccount(await libernet().getAccountByAddress(accountAddress));
     const offAccountChange = libernet().onAccountChange((account) => {
@@ -97,26 +108,118 @@ const Balance = ({ accountAddress }: { accountAddress: string }) => {
       await libernet().unwatchAccount(accountAddress);
     };
   }, [accountAddress]);
-  if (account) {
-    return (
-      <Card className="mx-auto mt-3">
-        <p className="prose lg:prose-lg">Hello, {account.address}.</p>
-        <p className="prose lg:prose-lg">
-          Your LIB balance is: <strong>{formatBalance(account.balance)}</strong>
+  return (
+    <Card className="mx-auto mt-3">
+      <p className="prose lg:prose-lg">
+        Hello{" "}
+        <kbd className="whitespace-nowrap">
+          {account?.address || accountAddress}{" "}
+          <TooltipContainer>
+            <button
+              className="m-0 cursor-pointer border-none bg-none p-0"
+              onClick={async () => {
+                await navigator.clipboard.writeText(
+                  account?.address || accountAddress,
+                );
+                setTooltip("Copied!");
+              }}
+              onMouseEnter={() => setTooltip("Copy to clipboard")}
+              onMouseLeave={() => setTooltip(null)}
+            >
+              <CopyIcon className="inline size-4" />
+            </button>
+            <Tooltip show={tooltip !== null}>{tooltip}</Tooltip>
+          </TooltipContainer>
+        </kbd>
+      </p>
+      {account && (
+        <p className="prose mt-3 lg:prose-lg">
+          Your LIB balance is: <strong>{formatBalance(account.balance)}</strong>{" "}
           <br />
-          (proven at block #{account.blockDescriptor.blockNumber} as of{" "}
-          {account.blockDescriptor.timestamp.toLocaleString()})
+          <small>
+            proven at block #{account.blockDescriptor.blockNumber} as of{" "}
+            {account.blockDescriptor.timestamp.toLocaleString()}
+          </small>
         </p>
-      </Card>
+      )}
+    </Card>
+  );
+};
+
+const Transactions = ({ accountAddress }: { accountAddress: string }) => {
+  const [transactions, setTransactions] = useState<TransactionInfo[] | null>(
+    null,
+  );
+  useAsyncEffect(async () => {
+    setTransactions(null);
+    setTransactions(
+      (
+        await Promise.all([
+          libernet().queryTransactions({
+            from: accountAddress,
+            sortOrder: "descending",
+            maxCount: 10,
+          }),
+          libernet().queryTransactions({
+            to: accountAddress,
+            sortOrder: "descending",
+            maxCount: 10,
+          }),
+        ])
+      )
+        .flat()
+        .sort(
+          (first, second) =>
+            first.blockDescriptor.timestamp.valueOf() -
+            second.blockDescriptor.timestamp.valueOf(),
+        )
+        .slice(0, 10),
     );
-  } else {
-    return (
-      <Card className="mx-auto mt-3">
-        <p className="prose lg:prose-lg">Hello, {accountAddress}.</p>
-        <p className="prose lg:prose-lg">{/* TODO: balance skeleton */}</p>
-      </Card>
-    );
-  }
+  }, [accountAddress]);
+  return (
+    <Card className="m-3 flex grow flex-col">
+      <Table className="grow">
+        <TableHeader>
+          <TableHeaderCell>date &amp; time</TableHeaderCell>
+          <TableHeaderCell>from</TableHeaderCell>
+          <TableHeaderCell>to</TableHeaderCell>
+          <TableHeaderCell>type</TableHeaderCell>
+          <TableHeaderCell>amount</TableHeaderCell>
+          <TableHeaderCell>tx hash</TableHeaderCell>
+        </TableHeader>
+        <TableBody>
+          {transactions === null ? (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center">
+                <em>Loading&hellip;</em>
+              </TableCell>
+            </TableRow>
+          ) : transactions.length > 0 ? (
+            transactions.map(({ blockDescriptor, signerAddress }) => (
+              <TableRow>
+                <TableCell>
+                  {blockDescriptor.timestamp.toLocaleString()}
+                </TableCell>
+                <TableCell>
+                  {signerAddress !== accountAddress ? (
+                    <pre>{signerAddress}</pre>
+                  ) : (
+                    <>You ({signerAddress})</>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center">
+                <em>No transactions yet.</em>
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </Card>
+  );
 };
 
 const hasAssets = (account: AccountInfo) =>
@@ -126,12 +229,17 @@ const Hello = () => {
   const [accounts, setAccounts] = useState<AccountInfo[]>([]);
   const [currentAccountIndex, setCurrentAccountIndex] = useState(0);
   useAsyncEffect(async () => {
+    let newAccounts = accounts;
+    let stop = false;
     let account: AccountInfo;
     let index = 0;
     do {
       account = await libernet().getAccountByNumber(index++);
-      setAccounts(accounts.concat(account));
-    } while (hasAssets(account));
+      setAccounts((newAccounts = newAccounts.concat(account)));
+    } while (!stop && hasAssets(account));
+    return () => {
+      stop = true;
+    };
   }, []);
   if (!accounts.length) {
     return null;
@@ -156,6 +264,7 @@ const Hello = () => {
         }}
       />
       <Balance accountAddress={accounts[currentAccountIndex].address} />
+      <Transactions accountAddress={accounts[currentAccountIndex].address} />
     </div>
   );
 };

@@ -10,16 +10,36 @@ import {
   type ServiceClientConstructor,
 } from "@grpc/grpc-js";
 
-import type { Account, TernaryMerkleProof } from "../crypto-bindings/crypto";
+import type {
+  Account,
+  BinaryMerkleProof32,
+  TernaryMerkleProof,
+} from "../crypto-bindings/crypto";
 
 import type { AccountInfo as AccountInfoProto } from "./proto/libernet/AccountInfo";
 import type { AccountSubscriptionResponse } from "./proto/libernet/AccountSubscriptionResponse";
 import type { BlockDescriptor as BlockDescriptorProto } from "./proto/libernet/BlockDescriptor";
 import type { GetAccountResponse } from "./proto/libernet/GetAccountResponse";
+import type { GetTransactionResponse } from "./proto/libernet/GetTransactionResponse";
 import type { MerkleProof as MerkleProofProto } from "./proto/libernet/MerkleProof";
+import type { QueryTransactionsResponse } from "./proto/libernet/QueryTransactionsResponse";
+import type {
+  Transaction as TransactionProto,
+  _libernet_Transaction_Payload as TransactionPayloadProto,
+} from "./proto/libernet/Transaction";
 
-import { createTernaryMerkleProof, poseidonHash } from "./crypto";
-import { AccountInfo, BlockDescriptor } from "./data";
+import {
+  createBinaryMerkleProof32,
+  createTernaryMerkleProof,
+  poseidonHash,
+} from "./crypto";
+import {
+  AccountInfo,
+  BlockDescriptor,
+  TransactionInfo,
+  TransactionPayload,
+  TransactionQueryParams,
+} from "./data";
 import { Mutex } from "./mutex";
 import { Proxy } from "./proxy";
 import {
@@ -28,6 +48,7 @@ import {
   decodeTimestamp,
   encodeScalar,
   libernetPackageDefinition,
+  toScalar,
   unpackAny,
 } from "./utilities";
 import { Wallet } from "./wallet";
@@ -115,9 +136,9 @@ export class Libernet {
     return new Libernet(account, proxy);
   }
 
-  private static _decodeBlockDescriptor(
+  private static async _decodeBlockDescriptor(
     proto: BlockDescriptorProto,
-  ): BlockDescriptor {
+  ): Promise<BlockDescriptor> {
     const blockHash = decodeScalar(proto.block_hash.value);
     const chainId = parseInt("" + proto.chain_id, 10);
     const blockNumber = parseInt("" + proto.block_number, 10);
@@ -126,11 +147,28 @@ export class Libernet {
     const networkTopologyRootHash = decodeScalar(
       proto.network_topology_root_hash.value,
     );
-    const lastTransactionHash = decodeScalar(proto.last_transaction_hash.value);
+    const transactionsRootHash = decodeScalar(
+      proto.transactions_root_hash.value,
+    );
     const accountsRootHash = decodeScalar(proto.accounts_root_hash.value);
     const programStorageRootHash = decodeScalar(
       proto.program_storage_root_hash.value,
     );
+    const computedHash = await poseidonHash([
+      toScalar(chainId),
+      toScalar(blockNumber),
+      previousBlockHash,
+      toScalar(~~(timestamp.valueOf() / 1000)),
+      networkTopologyRootHash,
+      transactionsRootHash,
+      accountsRootHash,
+      programStorageRootHash,
+    ]);
+    if (computedHash !== blockHash) {
+      throw new Error(
+        `invalid block hash (got ${blockHash}, want ${computedHash})`,
+      );
+    }
     return new BlockDescriptor(
       blockHash,
       chainId,
@@ -138,13 +176,30 @@ export class Libernet {
       previousBlockHash,
       timestamp,
       networkTopologyRootHash,
-      lastTransactionHash,
+      transactionsRootHash,
       accountsRootHash,
       programStorageRootHash,
     );
   }
 
-  private static async _decodeMerkleProof(
+  private static async _decodeBinaryMerkleProof32(
+    proto: MerkleProofProto,
+    valueAsScalar: string,
+    rootHash: string,
+  ): Promise<BinaryMerkleProof32> {
+    return await createBinaryMerkleProof32(
+      decodeScalar(proto.key.value),
+      valueAsScalar,
+      rootHash,
+      proto.path
+        .map((node) =>
+          node.child_hashes.map((hash) => decodeScalar(hash.value)),
+        )
+        .flat(),
+    );
+  }
+
+  private static async _decodeTernaryMerkleProof(
     proto: MerkleProofProto,
     valueAsScalar: string,
     rootHash: string,
@@ -163,10 +218,9 @@ export class Libernet {
 
   private static async _decodeAccountInfo(
     address: string,
-    blockProto: BlockDescriptorProto,
+    blockDescriptor: BlockDescriptor,
     accountProto: AccountInfoProto,
   ): Promise<AccountInfo> {
-    const blockDescriptor = Libernet._decodeBlockDescriptor(blockProto);
     const lastNonce = parseInt("" + accountProto.last_nonce, 10);
     const balance = decodeBigInt(accountProto.balance.value);
     const stakingBalance = decodeBigInt(accountProto.staking_balance.value);
@@ -190,17 +244,19 @@ export class Libernet {
     address: string,
     proofProto: MerkleProofProto,
   ): Promise<AccountInfo> {
-    const blockDescriptor = proofProto.block_descriptor;
+    const blockDescriptor = await Libernet._decodeBlockDescriptor(
+      proofProto.block_descriptor,
+    );
     const proto = unpackAny<AccountInfoProto>(proofProto.value);
     const info = await Libernet._decodeAccountInfo(
       address,
       blockDescriptor,
       proto,
     );
-    const proof = await Libernet._decodeMerkleProof(
+    const proof = await Libernet._decodeTernaryMerkleProof(
       proofProto,
       info.hash,
-      decodeScalar(blockDescriptor.accounts_root_hash.value),
+      blockDescriptor.accountsRootHash,
     );
     try {
       proof.verify();
@@ -210,7 +266,114 @@ export class Libernet {
     return info;
   }
 
-  public async getAccountInfo(address: string): Promise<AccountInfo> {
+  private static async _decodeTransaction(
+    blockDescriptor: BlockDescriptor,
+    transactionProto: TransactionProto,
+  ): Promise<TransactionInfo> {
+    const signerAddress = decodeScalar(transactionProto.signature.signer.value);
+    const content = unpackAny<TransactionPayloadProto>(
+      transactionProto.payload,
+    );
+    const chainId = parseInt("" + content.chain_id, 10);
+    const nonce = parseInt("" + content.nonce, 10);
+    let payload: TransactionPayload;
+    let transactionHash: string;
+    switch (content.transaction) {
+      case "block_reward":
+        {
+          if (!content.block_reward) {
+            throw new Error("transaction payload missing");
+          }
+          const recipient = decodeScalar(content.block_reward.recipient.value);
+          const amount = decodeScalar(content.block_reward.amount.value);
+          transactionHash = await poseidonHash([
+            signerAddress,
+            toScalar(chainId),
+            toScalar(nonce),
+            recipient,
+            amount,
+          ]);
+          payload = { recipient, amount };
+        }
+        break;
+      case "send_coins":
+        {
+          if (!content.send_coins) {
+            throw new Error("transaction payload missing");
+          }
+          const recipient = decodeScalar(content.send_coins.recipient.value);
+          const amount = decodeScalar(content.send_coins.amount.value);
+          transactionHash = await poseidonHash([
+            signerAddress,
+            toScalar(chainId),
+            toScalar(nonce),
+            recipient,
+            amount,
+          ]);
+          payload = { recipient, amount };
+        }
+        break;
+      case "create_program": {
+        if (!content.create_program) {
+          throw new Error("transaction payload missing");
+        }
+        // TODO: implement this.
+        throw new Error("not implemented yet");
+      }
+      default:
+        throw new Error(
+          `invalid transaction type: ${JSON.stringify(content.transaction)}`,
+        );
+    }
+    return new TransactionInfo(
+      transactionHash,
+      blockDescriptor,
+      signerAddress,
+      chainId,
+      nonce,
+      content.transaction,
+      payload,
+    );
+  }
+
+  private static async _processTransactionInclusionProof(
+    proofProto: MerkleProofProto,
+    transactionHash?: string,
+  ): Promise<TransactionInfo> {
+    const blockDescriptor = await Libernet._decodeBlockDescriptor(
+      proofProto.block_descriptor,
+    );
+    const proto = unpackAny<TransactionProto>(proofProto.value);
+    const info = await Libernet._decodeTransaction(blockDescriptor, proto);
+    if (transactionHash && info.hash !== transactionHash) {
+      throw new Error(
+        `bad transaction hash (got ${info.hash}, want ${transactionHash})`,
+      );
+    }
+    const proof = await Libernet._decodeBinaryMerkleProof32(
+      proofProto,
+      info.hash,
+      blockDescriptor.transactionsRootHash,
+    );
+    try {
+      proof.verify();
+    } finally {
+      proof.free();
+    }
+    return info;
+  }
+
+  private static _processTransactionInclusionProofs(
+    proofProtos: MerkleProofProto[],
+  ): Promise<TransactionInfo[]> {
+    return Promise.all(
+      proofProtos.map((proof) =>
+        Libernet._processTransactionInclusionProof(proof),
+      ),
+    );
+  }
+
+  public getAccountInfo(address: string): Promise<AccountInfo> {
     return new Promise((resolve, reject) => {
       this._client.getAccount(
         {
@@ -289,6 +452,74 @@ export class Libernet {
   public offAccountProof(listener: AccountListener): Libernet {
     this._accountListeners.delete(listener);
     return this;
+  }
+
+  public getTransaction(transactionHash: string): Promise<TransactionInfo> {
+    return new Promise((resolve, reject) => {
+      this._client.getTransaction(
+        {
+          transaction_hash: encodeScalar(transactionHash),
+        },
+        (error: unknown, response: GetTransactionResponse) => {
+          if (error) {
+            reject(error);
+          } else {
+            Libernet._processTransactionInclusionProof(
+              response.transaction_proof,
+              transactionHash,
+            )
+              .then(resolve)
+              .catch(reject);
+          }
+        },
+      );
+    });
+  }
+
+  public queryTransactions(
+    params: TransactionQueryParams,
+  ): Promise<TransactionInfo[]> {
+    return new Promise((resolve, reject) => {
+      this._client.queryTransactions(
+        {
+          from_filter: params.from ? encodeScalar(params.from) : null,
+          to_filter: params.to ? encodeScalar(params.to) : null,
+          sort_order: (() => {
+            switch (params.sortOrder) {
+              case "ascending":
+                return "TRANSACTION_SORT_ORDER_ASCENDING";
+              case "descending":
+                return "TRANSACTION_SORT_ORDER_DESCENDING";
+              default:
+                return null;
+            }
+          })(),
+          max_count: params.maxCount ?? null,
+          start_block_filter: params.startBlockHash ? "start_block_hash" : null,
+          start_block_hash: params.startBlockHash
+            ? encodeScalar(params.startBlockHash)
+            : null,
+          end_block_filter: params.endBlockHash ? "end_block_hash" : null,
+          end_block_hash: params.endBlockHash
+            ? encodeScalar(params.endBlockHash)
+            : null,
+        },
+        (error: unknown, response: QueryTransactionsResponse) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+          if (response.transaction_proofs !== "individual_proofs") {
+            throw new Error("unsupported proof type");
+          }
+          Libernet._processTransactionInclusionProofs(
+            response.individual_proofs?.individual_proof || [],
+          )
+            .then(resolve)
+            .catch(reject);
+        },
+      );
+    });
   }
 
   public async destroy(): Promise<void> {

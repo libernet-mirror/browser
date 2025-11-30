@@ -9,7 +9,6 @@ import type { AccountSubscriptionResponse as _libernet_AccountSubscriptionRespon
 import type { BlockDescriptor as _libernet_BlockDescriptor, BlockDescriptor__Output as _libernet_BlockDescriptor__Output } from './libernet/BlockDescriptor';
 import type { BlockSubscriptionRequest as _libernet_BlockSubscriptionRequest, BlockSubscriptionRequest__Output as _libernet_BlockSubscriptionRequest__Output } from './libernet/BlockSubscriptionRequest';
 import type { BlockSubscriptionResponse as _libernet_BlockSubscriptionResponse, BlockSubscriptionResponse__Output as _libernet_BlockSubscriptionResponse__Output } from './libernet/BlockSubscriptionResponse';
-import type { BoundTransaction as _libernet_BoundTransaction, BoundTransaction__Output as _libernet_BoundTransaction__Output } from './libernet/BoundTransaction';
 import type { BroadcastBlockRequest as _libernet_BroadcastBlockRequest, BroadcastBlockRequest__Output as _libernet_BroadcastBlockRequest__Output } from './libernet/BroadcastBlockRequest';
 import type { BroadcastBlockResponse as _libernet_BroadcastBlockResponse, BroadcastBlockResponse__Output as _libernet_BroadcastBlockResponse__Output } from './libernet/BroadcastBlockResponse';
 import type { BroadcastTransactionRequest as _libernet_BroadcastTransactionRequest, BroadcastTransactionRequest__Output as _libernet_BroadcastTransactionRequest__Output } from './libernet/BroadcastTransactionRequest';
@@ -23,6 +22,7 @@ import type { GetIdentityRequest as _libernet_GetIdentityRequest, GetIdentityReq
 import type { GetTopologyRequest as _libernet_GetTopologyRequest, GetTopologyRequest__Output as _libernet_GetTopologyRequest__Output } from './libernet/GetTopologyRequest';
 import type { GetTransactionRequest as _libernet_GetTransactionRequest, GetTransactionRequest__Output as _libernet_GetTransactionRequest__Output } from './libernet/GetTransactionRequest';
 import type { GetTransactionResponse as _libernet_GetTransactionResponse, GetTransactionResponse__Output as _libernet_GetTransactionResponse__Output } from './libernet/GetTransactionResponse';
+import type { MerkleMultiProof as _libernet_MerkleMultiProof, MerkleMultiProof__Output as _libernet_MerkleMultiProof__Output } from './libernet/MerkleMultiProof';
 import type { MerkleProof as _libernet_MerkleProof, MerkleProof__Output as _libernet_MerkleProof__Output } from './libernet/MerkleProof';
 import type { NetworkTopology as _libernet_NetworkTopology, NetworkTopology__Output as _libernet_NetworkTopology__Output } from './libernet/NetworkTopology';
 import type { NodeIdentity as _libernet_NodeIdentity, NodeIdentity__Output as _libernet_NodeIdentity__Output } from './libernet/NodeIdentity';
@@ -30,6 +30,8 @@ import type { NodeServiceV1Client as _libernet_NodeServiceV1Client, NodeServiceV
 import type { PointG1 as _libernet_PointG1, PointG1__Output as _libernet_PointG1__Output } from './libernet/PointG1';
 import type { PointG2 as _libernet_PointG2, PointG2__Output as _libernet_PointG2__Output } from './libernet/PointG2';
 import type { ProtocolVersion as _libernet_ProtocolVersion, ProtocolVersion__Output as _libernet_ProtocolVersion__Output } from './libernet/ProtocolVersion';
+import type { QueryTransactionsRequest as _libernet_QueryTransactionsRequest, QueryTransactionsRequest__Output as _libernet_QueryTransactionsRequest__Output } from './libernet/QueryTransactionsRequest';
+import type { QueryTransactionsResponse as _libernet_QueryTransactionsResponse, QueryTransactionsResponse__Output as _libernet_QueryTransactionsResponse__Output } from './libernet/QueryTransactionsResponse';
 import type { Scalar as _libernet_Scalar, Scalar__Output as _libernet_Scalar__Output } from './libernet/Scalar';
 import type { Signature as _libernet_Signature, Signature__Output as _libernet_Signature__Output } from './libernet/Signature';
 import type { Transaction as _libernet_Transaction, Transaction__Output as _libernet_Transaction__Output } from './libernet/Transaction';
@@ -52,7 +54,6 @@ export interface ProtoGrpcType {
     BlockDescriptor: MessageTypeDefinition<_libernet_BlockDescriptor, _libernet_BlockDescriptor__Output>
     BlockSubscriptionRequest: MessageTypeDefinition<_libernet_BlockSubscriptionRequest, _libernet_BlockSubscriptionRequest__Output>
     BlockSubscriptionResponse: MessageTypeDefinition<_libernet_BlockSubscriptionResponse, _libernet_BlockSubscriptionResponse__Output>
-    BoundTransaction: MessageTypeDefinition<_libernet_BoundTransaction, _libernet_BoundTransaction__Output>
     BroadcastBlockRequest: MessageTypeDefinition<_libernet_BroadcastBlockRequest, _libernet_BroadcastBlockRequest__Output>
     BroadcastBlockResponse: MessageTypeDefinition<_libernet_BroadcastBlockResponse, _libernet_BroadcastBlockResponse__Output>
     BroadcastTransactionRequest: MessageTypeDefinition<_libernet_BroadcastTransactionRequest, _libernet_BroadcastTransactionRequest__Output>
@@ -66,6 +67,7 @@ export interface ProtoGrpcType {
     GetTopologyRequest: MessageTypeDefinition<_libernet_GetTopologyRequest, _libernet_GetTopologyRequest__Output>
     GetTransactionRequest: MessageTypeDefinition<_libernet_GetTransactionRequest, _libernet_GetTransactionRequest__Output>
     GetTransactionResponse: MessageTypeDefinition<_libernet_GetTransactionResponse, _libernet_GetTransactionResponse__Output>
+    MerkleMultiProof: MessageTypeDefinition<_libernet_MerkleMultiProof, _libernet_MerkleMultiProof__Output>
     MerkleProof: MessageTypeDefinition<_libernet_MerkleProof, _libernet_MerkleProof__Output>
     NetworkTopology: MessageTypeDefinition<_libernet_NetworkTopology, _libernet_NetworkTopology__Output>
     NodeIdentity: MessageTypeDefinition<_libernet_NodeIdentity, _libernet_NodeIdentity__Output>
@@ -73,6 +75,8 @@ export interface ProtoGrpcType {
     PointG1: MessageTypeDefinition<_libernet_PointG1, _libernet_PointG1__Output>
     PointG2: MessageTypeDefinition<_libernet_PointG2, _libernet_PointG2__Output>
     ProtocolVersion: MessageTypeDefinition<_libernet_ProtocolVersion, _libernet_ProtocolVersion__Output>
+    QueryTransactionsRequest: MessageTypeDefinition<_libernet_QueryTransactionsRequest, _libernet_QueryTransactionsRequest__Output>
+    QueryTransactionsResponse: MessageTypeDefinition<_libernet_QueryTransactionsResponse, _libernet_QueryTransactionsResponse__Output>
     Scalar: MessageTypeDefinition<_libernet_Scalar, _libernet_Scalar__Output>
     Signature: MessageTypeDefinition<_libernet_Signature, _libernet_Signature__Output>
     Transaction: MessageTypeDefinition<_libernet_Transaction, _libernet_Transaction__Output>

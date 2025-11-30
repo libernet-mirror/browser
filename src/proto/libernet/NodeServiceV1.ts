@@ -20,6 +20,8 @@ import type { GetTransactionRequest as _libernet_GetTransactionRequest, GetTrans
 import type { GetTransactionResponse as _libernet_GetTransactionResponse, GetTransactionResponse__Output as _libernet_GetTransactionResponse__Output } from '../libernet/GetTransactionResponse';
 import type { NetworkTopology as _libernet_NetworkTopology, NetworkTopology__Output as _libernet_NetworkTopology__Output } from '../libernet/NetworkTopology';
 import type { NodeIdentity as _libernet_NodeIdentity, NodeIdentity__Output as _libernet_NodeIdentity__Output } from '../libernet/NodeIdentity';
+import type { QueryTransactionsRequest as _libernet_QueryTransactionsRequest, QueryTransactionsRequest__Output as _libernet_QueryTransactionsRequest__Output } from '../libernet/QueryTransactionsRequest';
+import type { QueryTransactionsResponse as _libernet_QueryTransactionsResponse, QueryTransactionsResponse__Output as _libernet_QueryTransactionsResponse__Output } from '../libernet/QueryTransactionsResponse';
 
 export interface NodeServiceV1Client extends grpc.Client {
   BroadcastNewBlock(argument: _libernet_BroadcastBlockRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: grpc.requestCallback<_libernet_BroadcastBlockResponse__Output>): grpc.ClientUnaryCall;
@@ -85,6 +87,15 @@ export interface NodeServiceV1Client extends grpc.Client {
   getTransaction(argument: _libernet_GetTransactionRequest, options: grpc.CallOptions, callback: grpc.requestCallback<_libernet_GetTransactionResponse__Output>): grpc.ClientUnaryCall;
   getTransaction(argument: _libernet_GetTransactionRequest, callback: grpc.requestCallback<_libernet_GetTransactionResponse__Output>): grpc.ClientUnaryCall;
   
+  QueryTransactions(argument: _libernet_QueryTransactionsRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: grpc.requestCallback<_libernet_QueryTransactionsResponse__Output>): grpc.ClientUnaryCall;
+  QueryTransactions(argument: _libernet_QueryTransactionsRequest, metadata: grpc.Metadata, callback: grpc.requestCallback<_libernet_QueryTransactionsResponse__Output>): grpc.ClientUnaryCall;
+  QueryTransactions(argument: _libernet_QueryTransactionsRequest, options: grpc.CallOptions, callback: grpc.requestCallback<_libernet_QueryTransactionsResponse__Output>): grpc.ClientUnaryCall;
+  QueryTransactions(argument: _libernet_QueryTransactionsRequest, callback: grpc.requestCallback<_libernet_QueryTransactionsResponse__Output>): grpc.ClientUnaryCall;
+  queryTransactions(argument: _libernet_QueryTransactionsRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: grpc.requestCallback<_libernet_QueryTransactionsResponse__Output>): grpc.ClientUnaryCall;
+  queryTransactions(argument: _libernet_QueryTransactionsRequest, metadata: grpc.Metadata, callback: grpc.requestCallback<_libernet_QueryTransactionsResponse__Output>): grpc.ClientUnaryCall;
+  queryTransactions(argument: _libernet_QueryTransactionsRequest, options: grpc.CallOptions, callback: grpc.requestCallback<_libernet_QueryTransactionsResponse__Output>): grpc.ClientUnaryCall;
+  queryTransactions(argument: _libernet_QueryTransactionsRequest, callback: grpc.requestCallback<_libernet_QueryTransactionsResponse__Output>): grpc.ClientUnaryCall;
+  
   SubscribeToAccount(argument: _libernet_AccountSubscriptionRequest, metadata: grpc.Metadata, options?: grpc.CallOptions): grpc.ClientReadableStream<_libernet_AccountSubscriptionResponse__Output>;
   SubscribeToAccount(argument: _libernet_AccountSubscriptionRequest, options?: grpc.CallOptions): grpc.ClientReadableStream<_libernet_AccountSubscriptionResponse__Output>;
   subscribeToAccount(argument: _libernet_AccountSubscriptionRequest, metadata: grpc.Metadata, options?: grpc.CallOptions): grpc.ClientReadableStream<_libernet_AccountSubscriptionResponse__Output>;
@@ -112,6 +123,8 @@ export interface NodeServiceV1Handlers extends grpc.UntypedServiceImplementation
   
   GetTransaction: grpc.handleUnaryCall<_libernet_GetTransactionRequest__Output, _libernet_GetTransactionResponse>;
   
+  QueryTransactions: grpc.handleUnaryCall<_libernet_QueryTransactionsRequest__Output, _libernet_QueryTransactionsResponse>;
+  
   SubscribeToAccount: grpc.handleServerStreamingCall<_libernet_AccountSubscriptionRequest__Output, _libernet_AccountSubscriptionResponse>;
   
   SubscribeToBlocks: grpc.handleServerStreamingCall<_libernet_BlockSubscriptionRequest__Output, _libernet_BlockSubscriptionResponse>;
@@ -126,6 +139,7 @@ export interface NodeServiceV1Definition extends grpc.ServiceDefinition {
   GetIdentity: MethodDefinition<_libernet_GetIdentityRequest, _libernet_NodeIdentity, _libernet_GetIdentityRequest__Output, _libernet_NodeIdentity__Output>
   GetTopology: MethodDefinition<_libernet_GetTopologyRequest, _libernet_NetworkTopology, _libernet_GetTopologyRequest__Output, _libernet_NetworkTopology__Output>
   GetTransaction: MethodDefinition<_libernet_GetTransactionRequest, _libernet_GetTransactionResponse, _libernet_GetTransactionRequest__Output, _libernet_GetTransactionResponse__Output>
+  QueryTransactions: MethodDefinition<_libernet_QueryTransactionsRequest, _libernet_QueryTransactionsResponse, _libernet_QueryTransactionsRequest__Output, _libernet_QueryTransactionsResponse__Output>
   SubscribeToAccount: MethodDefinition<_libernet_AccountSubscriptionRequest, _libernet_AccountSubscriptionResponse, _libernet_AccountSubscriptionRequest__Output, _libernet_AccountSubscriptionResponse__Output>
   SubscribeToBlocks: MethodDefinition<_libernet_BlockSubscriptionRequest, _libernet_BlockSubscriptionResponse, _libernet_BlockSubscriptionRequest__Output, _libernet_BlockSubscriptionResponse__Output>
 }
