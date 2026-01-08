@@ -8,7 +8,7 @@ export interface ProtocolVersion {
 }
 
 export interface ProtocolVersion__Output {
-  'major': (number);
-  'minor': (number);
-  'build': (number);
+  'major'?: (number);
+  'minor'?: (number);
+  'build'?: (number);
 }

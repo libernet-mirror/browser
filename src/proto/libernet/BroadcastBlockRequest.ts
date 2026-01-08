@@ -7,29 +7,29 @@ import type { Signature as _libernet_Signature, Signature__Output as _libernet_S
 import type { Long } from '@grpc/proto-loader';
 
 export interface _libernet_BroadcastBlockRequest_LeaderElectionProof {
-  'chain_id'?: (number | string | Long);
-  'slot_number'?: (number | string | Long);
-  'previous_block_hash'?: (_libernet_Scalar | null);
-  'verifiable_randomness'?: (_libernet_Signature | null);
+  'chainId'?: (number | string | Long);
+  'slotNumber'?: (number | string | Long);
+  'previousBlockHash'?: (_libernet_Scalar | null);
+  'verifiableRandomness'?: (_libernet_Signature | null);
 }
 
 export interface _libernet_BroadcastBlockRequest_LeaderElectionProof__Output {
-  'chain_id': (string);
-  'slot_number': (string);
-  'previous_block_hash': (_libernet_Scalar__Output | null);
-  'verifiable_randomness': (_libernet_Signature__Output | null);
+  'chainId'?: (Long);
+  'slotNumber'?: (Long);
+  'previousBlockHash'?: (_libernet_Scalar__Output);
+  'verifiableRandomness'?: (_libernet_Signature__Output);
 }
 
 export interface BroadcastBlockRequest {
-  'leader_election_proof'?: (_libernet_BroadcastBlockRequest_LeaderElectionProof | null);
-  'block_descriptor'?: (_libernet_BlockDescriptor | null);
+  'leaderElectionProof'?: (_libernet_BroadcastBlockRequest_LeaderElectionProof | null);
+  'blockDescriptor'?: (_libernet_BlockDescriptor | null);
   'transaction'?: (_libernet_Transaction)[];
   'ttl'?: (number);
 }
 
 export interface BroadcastBlockRequest__Output {
-  'leader_election_proof': (_libernet_BroadcastBlockRequest_LeaderElectionProof__Output | null);
-  'block_descriptor': (_libernet_BlockDescriptor__Output | null);
-  'transaction': (_libernet_Transaction__Output)[];
-  'ttl': (number);
+  'leaderElectionProof'?: (_libernet_BroadcastBlockRequest_LeaderElectionProof__Output);
+  'blockDescriptor'?: (_libernet_BlockDescriptor__Output);
+  'transaction'?: (_libernet_Transaction__Output)[];
+  'ttl'?: (number);
 }

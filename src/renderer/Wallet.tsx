@@ -1,7 +1,12 @@
+import { clsx } from "clsx";
 import { useState } from "react";
 
 import { type AccountInfo, type TransactionInfo } from "../data";
 
+import { AccountAddress } from "./components/Address";
+import { Backdrop, BackdropProvider } from "./components/Backdrop";
+import { PrimaryButton } from "./components/Buttons";
+import { BreadcrumbItem, Breadcrumbs } from "./components/Breadcrumbs";
 import { Card } from "./components/Card";
 import {
   Dropdown,
@@ -9,6 +14,7 @@ import {
   DropdownItem,
   DropdownMenu,
 } from "./components/Dropdown";
+import { ValidatedInput } from "./components/Input";
 import {
   Table,
   TableBody,
@@ -18,12 +24,17 @@ import {
   TableRow,
 } from "./components/Tables";
 import { Tooltip, TooltipContainer } from "./components/Tooltip";
-import { CopyIcon } from "./icons/Copy";
+import { PlusIcon } from "./icons/Plus";
 
 import { jazzicon } from "./Jazzicon";
 import { libernet } from "./Libernet";
 import Logo from "./Logo";
-import { formatBalance, useAsyncEffect } from "./Utilities";
+import {
+  bigIntToScalar,
+  formatLibAmount,
+  parseLibAmount,
+  useAsyncEffect,
+} from "./Utilities";
 import { Page as WalletLoginPage } from "./WalletLogin";
 import { Page as WalletSetupPage } from "./WalletSetup";
 
@@ -94,7 +105,6 @@ const Navbar = ({
 
 const Balance = ({ accountAddress }: { accountAddress: string }) => {
   const [account, setAccount] = useState<AccountInfo | null>(null);
-  const [tooltip, setTooltip] = useState<string | null>(null);
   useAsyncEffect(async () => {
     setAccount(await libernet().getAccountByAddress(accountAddress));
     const offAccountChange = libernet().onAccountChange((account) => {
@@ -109,32 +119,14 @@ const Balance = ({ accountAddress }: { accountAddress: string }) => {
     };
   }, [accountAddress]);
   return (
-    <Card className="mx-auto mt-3">
+    <Card clip={false} className="mx-auto mt-3">
       <p className="prose lg:prose-lg">
-        Hello{" "}
-        <kbd className="whitespace-nowrap">
-          {account?.address || accountAddress}{" "}
-          <TooltipContainer>
-            <button
-              className="m-0 cursor-pointer border-none bg-none p-0"
-              onClick={async () => {
-                await navigator.clipboard.writeText(
-                  account?.address || accountAddress,
-                );
-                setTooltip("Copied!");
-              }}
-              onMouseEnter={() => setTooltip("Copy to clipboard")}
-              onMouseLeave={() => setTooltip(null)}
-            >
-              <CopyIcon className="inline size-4" />
-            </button>
-            <Tooltip show={tooltip !== null}>{tooltip}</Tooltip>
-          </TooltipContainer>
-        </kbd>
+        Hello <AccountAddress address={account?.address || accountAddress} />
       </p>
       {account && (
         <p className="prose mt-3 lg:prose-lg">
-          Your LIB balance is: <strong>{formatBalance(account.balance)}</strong>{" "}
+          Your LIB balance is:{" "}
+          <strong>{formatLibAmount(account.balance)}</strong>
           <br />
           <small>
             proven at block #{account.blockDescriptor.blockNumber} as of{" "}
@@ -146,7 +138,15 @@ const Balance = ({ accountAddress }: { accountAddress: string }) => {
   );
 };
 
-const Transactions = ({ accountAddress }: { accountAddress: string }) => {
+const TransactionList = ({
+  accountAddress,
+  onNewTransaction,
+  className = "",
+}: {
+  accountAddress: string;
+  onNewTransaction: () => void;
+  className?: string;
+}) => {
   const [transactions, setTransactions] = useState<TransactionInfo[] | null>(
     null,
   );
@@ -177,7 +177,10 @@ const Transactions = ({ accountAddress }: { accountAddress: string }) => {
     );
   }, [accountAddress]);
   return (
-    <Card className="m-3 flex grow flex-col">
+    <Card className={clsx("relative m-3 flex flex-col", className)}>
+      <Breadcrumbs className="mb-3">
+        <BreadcrumbItem home>Account overview</BreadcrumbItem>
+      </Breadcrumbs>
       <Table className="grow">
         <TableHeader>
           <TableHeaderCell>date &amp; time</TableHeaderCell>
@@ -185,7 +188,7 @@ const Transactions = ({ accountAddress }: { accountAddress: string }) => {
           <TableHeaderCell>to</TableHeaderCell>
           <TableHeaderCell>type</TableHeaderCell>
           <TableHeaderCell>amount</TableHeaderCell>
-          <TableHeaderCell>tx hash</TableHeaderCell>
+          <TableHeaderCell>hash</TableHeaderCell>
         </TableHeader>
         <TableBody>
           {transactions === null ? (
@@ -218,6 +221,98 @@ const Transactions = ({ accountAddress }: { accountAddress: string }) => {
           )}
         </TableBody>
       </Table>
+      <TooltipContainer absolute className="right-0 bottom-0 mr-6 mb-6">
+        <PrimaryButton
+          round
+          className="cursor-pointer shadow-md"
+          onClick={onNewTransaction}
+        >
+          <PlusIcon className="size-6" />
+        </PrimaryButton>
+        <Tooltip anchor="right" className="whitespace-nowrap">
+          New transaction&hellip;
+        </Tooltip>
+      </TooltipContainer>
+    </Card>
+  );
+};
+
+const NewTransaction = ({
+  senderAccount,
+  onClose,
+  className = "",
+}: {
+  senderAccount: AccountInfo;
+  onClose: () => void;
+  className?: string;
+}) => {
+  const [recipientAddress, setRecipientAddress] = useState("");
+  const [amount, setAmount] = useState("");
+  const validateRecipientAddress = (address: string) =>
+    address !== senderAccount.address && /^0x[0-9a-f]{64}$/i.test(address);
+  const validateAmount = (value: string) => {
+    if (!/^[0-9]+(?:\.[0-9]+)?$/.test(value)) {
+      return false;
+    }
+    if (parseLibAmount(value) > senderAccount.balance) {
+      return false;
+    }
+    return true;
+  };
+  return (
+    <Card className={clsx("m-3 flex flex-col", className)}>
+      <Breadcrumbs className="mb-3">
+        <BreadcrumbItem home onClick={onClose}>
+          Account overview
+        </BreadcrumbItem>
+        <BreadcrumbItem>New transaction</BreadcrumbItem>
+      </Breadcrumbs>
+      <form
+        className="mx-auto w-md"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          if (
+            validateRecipientAddress(recipientAddress) &&
+            validateAmount(amount)
+          ) {
+            await (
+              await libernet()
+            ).submitTransaction("sendCoins", {
+              recipient: recipientAddress,
+              amount: bigIntToScalar(parseLibAmount(amount)),
+            });
+          }
+        }}
+      >
+        <label className="mb-3 block text-sm font-medium text-neutral-800">
+          Recipient address:
+          <ValidatedInput
+            value={recipientAddress}
+            validate={validateRecipientAddress}
+            onChange={({ target }) => setRecipientAddress("" + target.value)}
+          />
+        </label>
+        <label className="mb-3 block text-sm font-medium text-neutral-800">
+          LIB amount:
+          <ValidatedInput
+            value={amount}
+            validate={validateAmount}
+            onChange={({ target }) => setAmount("" + target.value)}
+          />
+        </label>
+        <div className="flex">
+          <span className="grow"></span>
+          <PrimaryButton
+            type="submit"
+            disabled={
+              !validateRecipientAddress(recipientAddress) ||
+              !validateAmount(amount)
+            }
+          >
+            Submit
+          </PrimaryButton>
+        </div>
+      </form>
     </Card>
   );
 };
@@ -228,44 +323,66 @@ const hasAssets = (account: AccountInfo) =>
 const Hello = () => {
   const [accounts, setAccounts] = useState<AccountInfo[]>([]);
   const [currentAccountIndex, setCurrentAccountIndex] = useState(0);
+  const [view, setView] = useState<"list" | "new">("list");
   useAsyncEffect(async () => {
     let newAccounts = accounts;
-    let stop = false;
     let account: AccountInfo;
     let index = 0;
-    do {
-      account = await libernet().getAccountByNumber(index++);
+    while (
+      ((account = await libernet().getAccountByNumber(index)),
+      !index++ || hasAssets(account))
+    ) {
       setAccounts((newAccounts = newAccounts.concat(account)));
-    } while (!stop && hasAssets(account));
-    return () => {
-      stop = true;
-    };
+    }
   }, []);
   if (!accounts.length) {
     return null;
   }
   return (
-    <div className="flex min-h-svh w-full flex-col bg-neutral-100">
-      <Navbar
-        accounts={accounts}
-        currentAccountIndex={currentAccountIndex}
-        onSwitchToAccount={async (index) => {
-          await libernet().switchAccount(index);
-          setCurrentAccountIndex(index);
-        }}
-        onSwitchToNextAccount={async () => {
-          const index = accounts.length;
-          const account = await libernet().getAccountByNumber(index);
-          if (accounts.length === index) {
-            setAccounts(accounts.concat(account));
+    <BackdropProvider>
+      <div className="flex min-h-svh w-full flex-col bg-neutral-100">
+        <Navbar
+          accounts={accounts}
+          currentAccountIndex={currentAccountIndex}
+          onSwitchToAccount={async (index) => {
             await libernet().switchAccount(index);
             setCurrentAccountIndex(index);
+            setView("list");
+          }}
+          onSwitchToNextAccount={async () => {
+            const index = accounts.length;
+            const account = await libernet().getAccountByNumber(index);
+            if (accounts.length === index) {
+              setAccounts(accounts.concat(account));
+              await libernet().switchAccount(index);
+              setCurrentAccountIndex(index);
+              setView("list");
+            }
+          }}
+        />
+        <Backdrop className="flex grow flex-col">
+          <Balance accountAddress={accounts[currentAccountIndex].address} />
+          {
+            {
+              list: (
+                <TransactionList
+                  accountAddress={accounts[currentAccountIndex].address}
+                  onNewTransaction={() => setView("new")}
+                  className="grow"
+                />
+              ),
+              new: (
+                <NewTransaction
+                  senderAccount={accounts[currentAccountIndex]}
+                  onClose={() => setView("list")}
+                  className="grow"
+                />
+              ),
+            }[view]
           }
-        }}
-      />
-      <Balance accountAddress={accounts[currentAccountIndex].address} />
-      <Transactions accountAddress={accounts[currentAccountIndex].address} />
-    </div>
+        </Backdrop>
+      </div>
+    </BackdropProvider>
   );
 };
 

@@ -11,8 +11,8 @@ export interface _libernet_Transaction_BlockReward {
 }
 
 export interface _libernet_Transaction_BlockReward__Output {
-  'recipient': (_libernet_Scalar__Output | null);
-  'amount': (_libernet_Scalar__Output | null);
+  'recipient'?: (_libernet_Scalar__Output);
+  'amount'?: (_libernet_Scalar__Output);
 }
 
 export interface _libernet_Transaction_CreateProgram {
@@ -20,25 +20,24 @@ export interface _libernet_Transaction_CreateProgram {
 }
 
 export interface _libernet_Transaction_CreateProgram__Output {
-  'bytecode': (Buffer);
+  'bytecode'?: (Buffer);
 }
 
 export interface _libernet_Transaction_Payload {
-  'chain_id'?: (number | string | Long);
+  'chainId'?: (number | string | Long);
   'nonce'?: (number | string | Long);
-  'block_reward'?: (_libernet_Transaction_BlockReward | null);
-  'send_coins'?: (_libernet_Transaction_SendCoins | null);
-  'create_program'?: (_libernet_Transaction_CreateProgram | null);
-  'transaction'?: "block_reward"|"send_coins"|"create_program";
+  'blockReward'?: (_libernet_Transaction_BlockReward | null);
+  'sendCoins'?: (_libernet_Transaction_SendCoins | null);
+  'createProgram'?: (_libernet_Transaction_CreateProgram | null);
+  'transaction'?: "blockReward"|"sendCoins"|"createProgram";
 }
 
 export interface _libernet_Transaction_Payload__Output {
-  'chain_id': (string);
-  'nonce': (string);
-  'block_reward'?: (_libernet_Transaction_BlockReward__Output | null);
-  'send_coins'?: (_libernet_Transaction_SendCoins__Output | null);
-  'create_program'?: (_libernet_Transaction_CreateProgram__Output | null);
-  'transaction'?: "block_reward"|"send_coins"|"create_program";
+  'chainId'?: (Long);
+  'nonce'?: (Long);
+  'blockReward'?: (_libernet_Transaction_BlockReward__Output);
+  'sendCoins'?: (_libernet_Transaction_SendCoins__Output);
+  'createProgram'?: (_libernet_Transaction_CreateProgram__Output);
 }
 
 export interface _libernet_Transaction_SendCoins {
@@ -47,8 +46,8 @@ export interface _libernet_Transaction_SendCoins {
 }
 
 export interface _libernet_Transaction_SendCoins__Output {
-  'recipient': (_libernet_Scalar__Output | null);
-  'amount': (_libernet_Scalar__Output | null);
+  'recipient'?: (_libernet_Scalar__Output);
+  'amount'?: (_libernet_Scalar__Output);
 }
 
 export interface Transaction {
@@ -57,6 +56,6 @@ export interface Transaction {
 }
 
 export interface Transaction__Output {
-  'payload': (_google_protobuf_Any__Output | null);
-  'signature': (_libernet_Signature__Output | null);
+  'payload'?: (_google_protobuf_Any__Output);
+  'signature'?: (_libernet_Signature__Output);
 }

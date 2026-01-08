@@ -8,6 +8,6 @@ export interface BroadcastTransactionRequest {
 }
 
 export interface BroadcastTransactionRequest__Output {
-  'transaction': (_libernet_Transaction__Output | null);
-  'ttl': (number);
+  'transaction'?: (_libernet_Transaction__Output);
+  'ttl'?: (number);
 }

@@ -3,9 +3,9 @@
 import type { MerkleProof as _libernet_MerkleProof, MerkleProof__Output as _libernet_MerkleProof__Output } from '../libernet/MerkleProof';
 
 export interface AccountSubscriptionResponse {
-  'account_proof'?: (_libernet_MerkleProof)[];
+  'accountProof'?: (_libernet_MerkleProof)[];
 }
 
 export interface AccountSubscriptionResponse__Output {
-  'account_proof': (_libernet_MerkleProof__Output)[];
+  'accountProof'?: (_libernet_MerkleProof__Output)[];
 }

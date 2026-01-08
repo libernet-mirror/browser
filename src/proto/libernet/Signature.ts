@@ -6,12 +6,12 @@ import type { PointG2 as _libernet_PointG2, PointG2__Output as _libernet_PointG2
 
 export interface Signature {
   'signer'?: (_libernet_Scalar | null);
-  'public_key'?: (_libernet_PointG1 | null);
+  'publicKey'?: (_libernet_PointG1 | null);
   'signature'?: (_libernet_PointG2 | null);
 }
 
 export interface Signature__Output {
-  'signer': (_libernet_Scalar__Output | null);
-  'public_key': (_libernet_PointG1__Output | null);
-  'signature': (_libernet_PointG2__Output | null);
+  'signer'?: (_libernet_Scalar__Output);
+  'publicKey'?: (_libernet_PointG1__Output);
+  'signature'?: (_libernet_PointG2__Output);
 }

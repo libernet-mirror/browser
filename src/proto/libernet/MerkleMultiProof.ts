@@ -6,16 +6,15 @@ import type { Scalar as _libernet_Scalar, Scalar__Output as _libernet_Scalar__Ou
 
 export interface _libernet_MerkleMultiProof_Node_Child {
   'hash'?: (_libernet_Scalar | null);
-  'node_index'?: (number);
-  'leaf_index'?: (number);
-  'child'?: "hash"|"node_index"|"leaf_index";
+  'nodeIndex'?: (number);
+  'leafIndex'?: (number);
+  'child'?: "hash"|"nodeIndex"|"leafIndex";
 }
 
 export interface _libernet_MerkleMultiProof_Node_Child__Output {
-  'hash'?: (_libernet_Scalar__Output | null);
-  'node_index'?: (number);
-  'leaf_index'?: (number);
-  'child'?: "hash"|"node_index"|"leaf_index";
+  'hash'?: (_libernet_Scalar__Output);
+  'nodeIndex'?: (number);
+  'leafIndex'?: (number);
 }
 
 export interface _libernet_MerkleMultiProof_Node {
@@ -24,18 +23,18 @@ export interface _libernet_MerkleMultiProof_Node {
 }
 
 export interface _libernet_MerkleMultiProof_Node__Output {
-  'hash': (_libernet_Scalar__Output | null);
-  'child': (_libernet_MerkleMultiProof_Node_Child__Output)[];
+  'hash'?: (_libernet_Scalar__Output);
+  'child'?: (_libernet_MerkleMultiProof_Node_Child__Output)[];
 }
 
 export interface MerkleMultiProof {
-  'block_descriptor'?: (_libernet_BlockDescriptor | null);
+  'blockDescriptor'?: (_libernet_BlockDescriptor | null);
   'node'?: (_libernet_MerkleMultiProof_Node)[];
   'value'?: (_google_protobuf_Any)[];
 }
 
 export interface MerkleMultiProof__Output {
-  'block_descriptor': (_libernet_BlockDescriptor__Output | null);
-  'node': (_libernet_MerkleMultiProof_Node__Output)[];
-  'value': (_google_protobuf_Any__Output)[];
+  'blockDescriptor'?: (_libernet_BlockDescriptor__Output);
+  'node'?: (_libernet_MerkleMultiProof_Node__Output)[];
+  'value'?: (_google_protobuf_Any__Output)[];
 }

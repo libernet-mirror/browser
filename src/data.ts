@@ -39,12 +39,12 @@ export class AccountInfo {
   }
 }
 
-export type TransactionType = "block_reward" | "send_coins" | "create_program";
+export type TransactionType = "blockReward" | "sendCoins" | "createProgram";
 
 export const TRANSACTION_TYPES = new Set<TransactionType>([
-  "block_reward",
-  "send_coins",
-  "create_program",
+  "blockReward",
+  "sendCoins",
+  "createProgram",
 ]);
 
 export interface BlockRewardTransactionPayload {

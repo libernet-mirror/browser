@@ -1,7 +1,9 @@
 import {
   type AccountInfo,
   type TransactionInfo,
+  type TransactionPayload,
   type TransactionQueryParams,
+  type TransactionType,
 } from "../data";
 
 export type ContentView = "control" | "web" | "settings" | "wallet";
@@ -35,6 +37,10 @@ export interface LibernetAPI {
   ): () => void;
   getTransaction(transactionHash: string): Promise<TransactionInfo>;
   queryTransactions(params: TransactionQueryParams): Promise<TransactionInfo[]>;
+  submitTransaction(
+    type: TransactionType,
+    payload: TransactionPayload,
+  ): Promise<void>;
 }
 
 export function libernet(): LibernetAPI {

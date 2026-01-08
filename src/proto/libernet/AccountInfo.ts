@@ -4,13 +4,13 @@ import type { Scalar as _libernet_Scalar, Scalar__Output as _libernet_Scalar__Ou
 import type { Long } from '@grpc/proto-loader';
 
 export interface AccountInfo {
-  'last_nonce'?: (number | string | Long);
+  'lastNonce'?: (number | string | Long);
   'balance'?: (_libernet_Scalar | null);
-  'staking_balance'?: (_libernet_Scalar | null);
+  'stakingBalance'?: (_libernet_Scalar | null);
 }
 
 export interface AccountInfo__Output {
-  'last_nonce': (string);
-  'balance': (_libernet_Scalar__Output | null);
-  'staking_balance': (_libernet_Scalar__Output | null);
+  'lastNonce'?: (Long);
+  'balance'?: (_libernet_Scalar__Output);
+  'stakingBalance'?: (_libernet_Scalar__Output);
 }

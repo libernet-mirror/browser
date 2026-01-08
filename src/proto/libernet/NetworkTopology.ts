@@ -7,7 +7,7 @@ export interface _libernet_NetworkTopology_Cluster {
 }
 
 export interface _libernet_NetworkTopology_Cluster__Output {
-  'node': (_libernet_NodeIdentity__Output)[];
+  'node'?: (_libernet_NodeIdentity__Output)[];
 }
 
 export interface NetworkTopology {
@@ -15,5 +15,5 @@ export interface NetworkTopology {
 }
 
 export interface NetworkTopology__Output {
-  'cluster': (_libernet_NetworkTopology_Cluster__Output)[];
+  'cluster'?: (_libernet_NetworkTopology_Cluster__Output)[];
 }

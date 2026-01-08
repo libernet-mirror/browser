@@ -40,9 +40,11 @@ const CONTROL_BAR_HEIGHT = 45;
 const SYSTEM_URL_SETTINGS = "liber://settings";
 const SYSTEM_URL_WALLET = "liber://wallet";
 
-const DEFAULT_HOME_ADDRESS = "https://google.com";
+const DEFAULT_HOME_ADDRESS = "https://www.google.com/";
+const DEFAULT_SEARCH_ENGINE = "https://www.google.com/search?q=$QUERY$";
 
 const URL_PROTOCOL_PATTERN = /^([a-z]+):\/\//;
+const DNS_PREFIX_PATTERN = /^[_a-z0-9-]+(?:\.[_a-z0-9-]+)*(\/|$)/i;
 
 const createWindow = async () => {
   const mainWindow = new BaseWindow({
@@ -131,7 +133,11 @@ const createWindow = async () => {
   const setWebView = async (url: string) => {
     console.log(`setWebView(${JSON.stringify(url)})`);
     if (!URL_PROTOCOL_PATTERN.test(url)) {
-      url = "http://" + url;
+      if (DNS_PREFIX_PATTERN.test(url)) {
+        url = "http://" + url;
+      } else {
+        url = DEFAULT_SEARCH_ENGINE.replace("$QUERY$", encodeURIComponent(url));
+      }
     }
     {
       const [, protocol] = url.match(URL_PROTOCOL_PATTERN);
@@ -287,7 +293,11 @@ app.on("activate", () => {
 
 import { Mutex } from "./mutex";
 import { Wallet, WalletData } from "./wallet";
-import { TransactionQueryParams } from "./data";
+import {
+  type TransactionPayload,
+  type TransactionQueryParams,
+  type TransactionType,
+} from "./data";
 
 const walletFileMutex = new Mutex();
 
@@ -383,4 +393,10 @@ ipcMain.handle(
   "net/query-transactions",
   async (_, params: TransactionQueryParams) =>
     await (await libernet()).queryTransactions(params),
+);
+
+ipcMain.handle(
+  "net/submit-transaction",
+  async (_, type: TransactionType, payload: TransactionPayload) =>
+    await (await libernet()).submitTransaction(type, payload),
 );

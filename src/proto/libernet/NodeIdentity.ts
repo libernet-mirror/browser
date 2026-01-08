@@ -9,25 +9,25 @@ import type { Timestamp as _google_protobuf_Timestamp, Timestamp__Output as _goo
 import type { Long } from '@grpc/proto-loader';
 
 export interface _libernet_NodeIdentity_Payload {
-  'protocol_version'?: (_libernet_ProtocolVersion | null);
-  'chain_id'?: (number | string | Long);
-  'account_address'?: (_libernet_Scalar | null);
+  'protocolVersion'?: (_libernet_ProtocolVersion | null);
+  'chainId'?: (number | string | Long);
+  'accountAddress'?: (_libernet_Scalar | null);
   'location'?: (_libernet_GeographicalLocation | null);
-  'network_address'?: (string);
-  'grpc_port'?: (number);
-  'http_port'?: (number);
+  'networkAddress'?: (string);
+  'grpcPort'?: (number);
+  'httpPort'?: (number);
   'timestamp'?: (_google_protobuf_Timestamp | null);
 }
 
 export interface _libernet_NodeIdentity_Payload__Output {
-  'protocol_version': (_libernet_ProtocolVersion__Output | null);
-  'chain_id': (string);
-  'account_address': (_libernet_Scalar__Output | null);
-  'location': (_libernet_GeographicalLocation__Output | null);
-  'network_address': (string);
-  'grpc_port': (number);
-  'http_port': (number);
-  'timestamp': (_google_protobuf_Timestamp__Output | null);
+  'protocolVersion'?: (_libernet_ProtocolVersion__Output);
+  'chainId'?: (Long);
+  'accountAddress'?: (_libernet_Scalar__Output);
+  'location'?: (_libernet_GeographicalLocation__Output);
+  'networkAddress'?: (string);
+  'grpcPort'?: (number);
+  'httpPort'?: (number);
+  'timestamp'?: (_google_protobuf_Timestamp__Output);
 }
 
 export interface NodeIdentity {
@@ -36,6 +36,6 @@ export interface NodeIdentity {
 }
 
 export interface NodeIdentity__Output {
-  'payload': (_google_protobuf_Any__Output | null);
-  'signature': (_libernet_Signature__Output | null);
+  'payload'?: (_google_protobuf_Any__Output);
+  'signature'?: (_libernet_Signature__Output);
 }

@@ -8,15 +8,16 @@ import {
   useState,
 } from "react";
 
-interface DropdownContextInterface {
-  isOpen: boolean;
+import { BackdropContext } from "./Backdrop";
+
+interface DropdownManager {
+  isOpen(): boolean;
   setOpen(open: boolean): void;
 }
 
-const DropdownContext = createContext<DropdownContextInterface>({
-  isOpen: false,
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  setOpen() {},
+const DropdownContext = createContext<DropdownManager>({
+  isOpen: () => false,
+  setOpen: () => void 0,
 });
 
 export const Dropdown = ({
@@ -24,8 +25,21 @@ export const Dropdown = ({
   ...props
 }: ComponentPropsWithoutRef<"div">) => {
   const [open, setOpen] = useState(false);
+  const backdrop = useContext(BackdropContext);
   return (
-    <DropdownContext value={{ isOpen: open, setOpen }}>
+    <DropdownContext
+      value={{
+        isOpen: () => open,
+        setOpen(open: boolean) {
+          if (open) {
+            backdrop.activate(() => setOpen(false));
+            setOpen(true);
+          } else {
+            backdrop.deactivate();
+          }
+        },
+      }}
+    >
       <div className="relative overflow-visible" {...props}>
         {children}
       </div>
@@ -45,7 +59,7 @@ export const DropdownButton = ({
         "h-8 w-10 rounded-md bg-transparent px-2 py-1 outline-none hover:bg-neutral-100 active:bg-neutral-200",
         className,
       )}
-      onClick={() => setOpen(!isOpen)}
+      onClick={() => setOpen(!isOpen())}
       {...props}
     >
       {children}
@@ -55,11 +69,11 @@ export const DropdownButton = ({
 
 export const DropdownMenu = ({ children }: PropsWithChildren) => {
   const { isOpen } = useContext(DropdownContext);
-  if (!isOpen) {
+  if (!isOpen()) {
     return null;
   }
   return (
-    <div className="absolute top-full right-0 w-sm rounded-lg border border-neutral-200 bg-white p-1 shadow-md">
+    <div className="absolute top-full right-0 z-1000 w-sm rounded-lg border border-neutral-200 bg-white p-1 shadow-md">
       <ol>{children}</ol>
     </div>
   );
@@ -77,8 +91,8 @@ export const DropdownItem = ({
         disabled ? "cursor-default" : "cursor-pointer",
         "px-2 py-1",
         disabled && "text-neutral-400",
-        "rounded-sm hover:bg-neutral-100",
-        !disabled && "active:bg-neutral-200",
+        "rounded-sm",
+        !disabled && "hover:bg-neutral-100 active:bg-neutral-200",
       )}
       onClick={() => {
         if (!disabled) {

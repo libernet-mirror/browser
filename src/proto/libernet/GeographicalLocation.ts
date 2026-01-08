@@ -7,6 +7,6 @@ export interface GeographicalLocation {
 }
 
 export interface GeographicalLocation__Output {
-  'latitude': (number);
-  'longitude': (number);
+  'latitude'?: (number);
+  'longitude'?: (number);
 }

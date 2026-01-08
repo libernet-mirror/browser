@@ -2,9 +2,9 @@
 
 
 export interface PointG1 {
-  'compressed_bytes'?: (Buffer | Uint8Array | string);
+  'compressedBytes'?: (Buffer | Uint8Array | string);
 }
 
 export interface PointG1__Output {
-  'compressed_bytes': (Buffer);
+  'compressedBytes'?: (Buffer);
 }

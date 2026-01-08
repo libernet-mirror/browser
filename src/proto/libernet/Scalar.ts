@@ -6,5 +6,5 @@ export interface Scalar {
 }
 
 export interface Scalar__Output {
-  'value': (Buffer);
+  'value'?: (Buffer);
 }
