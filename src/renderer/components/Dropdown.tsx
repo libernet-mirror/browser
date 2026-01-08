@@ -59,7 +59,7 @@ export const DropdownMenu = ({ children }: PropsWithChildren) => {
     return null;
   }
   return (
-    <div className="absolute top-full right-0 w-sm rounded-lg border border-neutral-200 bg-white p-1 shadow-md">
+    <div className="absolute top-full right-0 z-1000 w-sm rounded-lg border border-neutral-200 bg-white p-1 shadow-md">
       <ol>{children}</ol>
     </div>
   );

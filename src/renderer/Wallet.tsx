@@ -2,6 +2,8 @@ import { useState } from "react";
 
 import { type AccountInfo, type TransactionInfo } from "../data";
 
+import { PrimaryButton } from "./components/Buttons";
+import { BreadcrumbItem, Breadcrumbs } from "./components/Breadcrumbs";
 import { Card } from "./components/Card";
 import {
   Dropdown,
@@ -19,6 +21,9 @@ import {
 } from "./components/Tables";
 import { Tooltip, TooltipContainer } from "./components/Tooltip";
 import { CopyIcon } from "./icons/Copy";
+import { GreaterIcon } from "./icons/Greater";
+import { HomeIcon } from "./icons/Home";
+import { PlusIcon } from "./icons/Plus";
 
 import { jazzicon } from "./Jazzicon";
 import { libernet } from "./Libernet";
@@ -94,7 +99,7 @@ const Navbar = ({
 
 const Balance = ({ accountAddress }: { accountAddress: string }) => {
   const [account, setAccount] = useState<AccountInfo | null>(null);
-  const [tooltip, setTooltip] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   useAsyncEffect(async () => {
     setAccount(await libernet().getAccountByAddress(accountAddress));
     const offAccountChange = libernet().onAccountChange((account) => {
@@ -121,14 +126,15 @@ const Balance = ({ accountAddress }: { accountAddress: string }) => {
                 await navigator.clipboard.writeText(
                   account?.address || accountAddress,
                 );
-                setTooltip("Copied!");
+                setCopied(true);
               }}
-              onMouseEnter={() => setTooltip("Copy to clipboard")}
-              onMouseLeave={() => setTooltip(null)}
+              onMouseLeave={() => setCopied(false)}
             >
               <CopyIcon className="inline size-4" />
             </button>
-            <Tooltip show={tooltip !== null}>{tooltip}</Tooltip>
+            <Tooltip show anchor="middle">
+              {copied ? "Copied!" : "Copy to clipboard"}
+            </Tooltip>
           </TooltipContainer>
         </kbd>
       </p>
@@ -146,7 +152,13 @@ const Balance = ({ accountAddress }: { accountAddress: string }) => {
   );
 };
 
-const Transactions = ({ accountAddress }: { accountAddress: string }) => {
+const TransactionList = ({
+  accountAddress,
+  onNewTransaction,
+}: {
+  accountAddress: string;
+  onNewTransaction: () => void;
+}) => {
   const [transactions, setTransactions] = useState<TransactionInfo[] | null>(
     null,
   );
@@ -177,7 +189,13 @@ const Transactions = ({ accountAddress }: { accountAddress: string }) => {
     );
   }, [accountAddress]);
   return (
-    <Card className="m-3 flex grow flex-col">
+    <Card className="relative m-3 flex grow flex-col">
+      <Breadcrumbs>
+        <BreadcrumbItem active>
+          <HomeIcon className="me-1.5 size-4" />
+          Account overview
+        </BreadcrumbItem>
+      </Breadcrumbs>
       <Table className="grow">
         <TableHeader>
           <TableHeaderCell>date &amp; time</TableHeaderCell>
@@ -218,9 +236,44 @@ const Transactions = ({ accountAddress }: { accountAddress: string }) => {
           )}
         </TableBody>
       </Table>
+      <TooltipContainer absolute className="right-0 bottom-0 mr-6 mb-6">
+        <PrimaryButton
+          round
+          className="cursor-pointer shadow-md"
+          onClick={onNewTransaction}
+        >
+          <PlusIcon className="size-6" />
+        </PrimaryButton>
+        <Tooltip show anchor="right" className="whitespace-nowrap">
+          New transaction&hellip;
+        </Tooltip>
+      </TooltipContainer>
     </Card>
   );
 };
+
+const NewTransaction = ({ onClose }: { onClose: () => void }) => (
+  <Card className="m-3 flex grow flex-col">
+    <Breadcrumbs>
+      <BreadcrumbItem onClick={onClose}>
+        <HomeIcon className="me-1.5 size-4" />
+        Account overview
+      </BreadcrumbItem>
+      <BreadcrumbItem>
+        <GreaterIcon className="me-1.5 size-4" />
+        New transaction
+      </BreadcrumbItem>
+    </Breadcrumbs>
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        // TODO
+      }}
+    >
+      {/* TODO */}
+    </form>
+  </Card>
+);
 
 const hasAssets = (account: AccountInfo) =>
   account.balance !== 0n || account.stakingBalance !== 0n;
@@ -228,6 +281,7 @@ const hasAssets = (account: AccountInfo) =>
 const Hello = () => {
   const [accounts, setAccounts] = useState<AccountInfo[]>([]);
   const [currentAccountIndex, setCurrentAccountIndex] = useState(0);
+  const [view, setView] = useState<"list" | "new">("list");
   useAsyncEffect(async () => {
     let newAccounts = accounts;
     let stop = false;
@@ -252,6 +306,7 @@ const Hello = () => {
         onSwitchToAccount={async (index) => {
           await libernet().switchAccount(index);
           setCurrentAccountIndex(index);
+          setView("list");
         }}
         onSwitchToNextAccount={async () => {
           const index = accounts.length;
@@ -260,11 +315,22 @@ const Hello = () => {
             setAccounts(accounts.concat(account));
             await libernet().switchAccount(index);
             setCurrentAccountIndex(index);
+            setView("list");
           }
         }}
       />
       <Balance accountAddress={accounts[currentAccountIndex].address} />
-      <Transactions accountAddress={accounts[currentAccountIndex].address} />
+      {
+        {
+          list: (
+            <TransactionList
+              accountAddress={accounts[currentAccountIndex].address}
+              onNewTransaction={() => setView("new")}
+            />
+          ),
+          new: <NewTransaction onClose={() => setView("list")} />,
+        }[view]
+      }
     </div>
   );
 };
