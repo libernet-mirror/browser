@@ -1,8 +1,11 @@
 import { clsx } from "clsx";
 import { type PropsWithChildren } from "react";
 
-export const Breadcrumbs = ({ children }: PropsWithChildren) => (
-  <nav className="mb-3 flex">
+export const Breadcrumbs = ({
+  children,
+  className = "",
+}: PropsWithChildren & { className?: string }) => (
+  <nav className={clsx("flex", className)}>
     <ol className="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
       {children}
     </ol>

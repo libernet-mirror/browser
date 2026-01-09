@@ -33,16 +33,17 @@ export const Tooltip = ({
   children,
   className = "",
   anchor = "middle",
+  forceShow = false,
 }: ComponentPropsWithoutRef<"span"> & {
   className?: string;
-  show: boolean;
   anchor?: "left" | "middle" | "right";
+  forceShow?: boolean;
 }) => {
   const show = useContext(TooltipContext);
   return (
     <span
       className={clsx(
-        { invisible: !show },
+        { invisible: !show && !forceShow },
         "absolute bottom-full z-1000 mb-1.5 inline-block rounded-sm bg-black px-2 py-1 text-sm text-white shadow-xs",
         {
           left: "left-0",

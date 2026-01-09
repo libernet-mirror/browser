@@ -8,12 +8,22 @@ const sizes = {
 
 export const Card = ({
   size = "md",
+  clip = true,
   className,
   children,
   ...props
-}: ComponentPropsWithoutRef<"div"> & { size?: keyof typeof sizes }) => (
+}: ComponentPropsWithoutRef<"div"> & {
+  size?: keyof typeof sizes;
+  clip?: boolean;
+}) => (
   <div
-    className={clsx("rounded-lg bg-white", sizes[size], "shadow-sm", className)}
+    className={clsx(
+      clip && "overflow-hidden",
+      "rounded-lg bg-white",
+      sizes[size],
+      "shadow-sm",
+      className,
+    )}
     {...props}
   >
     {children}

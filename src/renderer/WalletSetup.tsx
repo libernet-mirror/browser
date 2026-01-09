@@ -45,7 +45,7 @@ const PasswordRow = ({
         type={visible ? "text" : "password"}
         placeholder="Type password"
         value={password}
-        invalid={duplicate}
+        state={duplicate ? "invalid" : "neutral"}
         onChange={({ target }) => onPasswordChange(target.value)}
         onFocus={() => setEditing(true)}
         onBlur={() => setEditing(false)}
@@ -55,7 +55,7 @@ const PasswordRow = ({
         type={visible ? "text" : "password"}
         placeholder="Confirm password"
         value={confirmation}
-        invalid={mismatch}
+        state={mismatch ? "invalid" : "neutral"}
         onChange={({ target }) => onConfirmationChange(target.value)}
         onFocus={() => setEditing(true)}
         onBlur={() => setEditing(false)}

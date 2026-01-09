@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { type AccountInfo, type TransactionInfo } from "../data";
 
+import { AccountAddress } from "./components/Address";
 import { PrimaryButton } from "./components/Buttons";
 import { BreadcrumbItem, Breadcrumbs } from "./components/Breadcrumbs";
 import { Card } from "./components/Card";
@@ -20,7 +21,6 @@ import {
   TableRow,
 } from "./components/Tables";
 import { Tooltip, TooltipContainer } from "./components/Tooltip";
-import { CopyIcon } from "./icons/Copy";
 import { GreaterIcon } from "./icons/Greater";
 import { HomeIcon } from "./icons/Home";
 import { PlusIcon } from "./icons/Plus";
@@ -31,6 +31,7 @@ import Logo from "./Logo";
 import { formatBalance, useAsyncEffect } from "./Utilities";
 import { Page as WalletLoginPage } from "./WalletLogin";
 import { Page as WalletSetupPage } from "./WalletSetup";
+import { ValidatedInput } from "./components/Input";
 
 const AccountTile = ({
   account,
@@ -99,7 +100,6 @@ const Navbar = ({
 
 const Balance = ({ accountAddress }: { accountAddress: string }) => {
   const [account, setAccount] = useState<AccountInfo | null>(null);
-  const [copied, setCopied] = useState(false);
   useAsyncEffect(async () => {
     setAccount(await libernet().getAccountByAddress(accountAddress));
     const offAccountChange = libernet().onAccountChange((account) => {
@@ -114,29 +114,9 @@ const Balance = ({ accountAddress }: { accountAddress: string }) => {
     };
   }, [accountAddress]);
   return (
-    <Card className="mx-auto mt-3">
+    <Card clip={false} className="mx-auto mt-3">
       <p className="prose lg:prose-lg">
-        Hello{" "}
-        <kbd className="whitespace-nowrap">
-          {account?.address || accountAddress}{" "}
-          <TooltipContainer>
-            <button
-              className="m-0 cursor-pointer border-none bg-none p-0"
-              onClick={async () => {
-                await navigator.clipboard.writeText(
-                  account?.address || accountAddress,
-                );
-                setCopied(true);
-              }}
-              onMouseLeave={() => setCopied(false)}
-            >
-              <CopyIcon className="inline size-4" />
-            </button>
-            <Tooltip show anchor="middle">
-              {copied ? "Copied!" : "Copy to clipboard"}
-            </Tooltip>
-          </TooltipContainer>
-        </kbd>
+        Hello <AccountAddress address={account?.address || accountAddress} />
       </p>
       {account && (
         <p className="prose mt-3 lg:prose-lg">
@@ -190,7 +170,7 @@ const TransactionList = ({
   }, [accountAddress]);
   return (
     <Card className="relative m-3 flex grow flex-col">
-      <Breadcrumbs>
+      <Breadcrumbs className="mb-3">
         <BreadcrumbItem active>
           <HomeIcon className="me-1.5 size-4" />
           Account overview
@@ -244,7 +224,7 @@ const TransactionList = ({
         >
           <PlusIcon className="size-6" />
         </PrimaryButton>
-        <Tooltip show anchor="right" className="whitespace-nowrap">
+        <Tooltip anchor="right" className="whitespace-nowrap">
           New transaction&hellip;
         </Tooltip>
       </TooltipContainer>
@@ -252,28 +232,40 @@ const TransactionList = ({
   );
 };
 
-const NewTransaction = ({ onClose }: { onClose: () => void }) => (
-  <Card className="m-3 flex grow flex-col">
-    <Breadcrumbs>
-      <BreadcrumbItem onClick={onClose}>
-        <HomeIcon className="me-1.5 size-4" />
-        Account overview
-      </BreadcrumbItem>
-      <BreadcrumbItem>
-        <GreaterIcon className="me-1.5 size-4" />
-        New transaction
-      </BreadcrumbItem>
-    </Breadcrumbs>
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        // TODO
-      }}
-    >
-      {/* TODO */}
-    </form>
-  </Card>
-);
+const NewTransaction = ({ onClose }: { onClose: () => void }) => {
+  const [recipientAddress, setRecipientAddress] = useState("");
+  return (
+    <Card className="m-3 flex grow flex-col">
+      <Breadcrumbs className="mb-3">
+        <BreadcrumbItem onClick={onClose}>
+          <HomeIcon className="me-1.5 size-4" />
+          Account overview
+        </BreadcrumbItem>
+        <BreadcrumbItem>
+          <GreaterIcon className="me-1.5 size-4" />
+          New transaction
+        </BreadcrumbItem>
+      </Breadcrumbs>
+      <form
+        className="mx-auto w-md"
+        onSubmit={(e) => {
+          e.preventDefault();
+          // TODO
+        }}
+      >
+        <label className="block text-sm font-medium text-neutral-600">
+          Recipient address:
+          <ValidatedInput
+            value={recipientAddress}
+            pattern="0[xX][0-9a-fA-F]{64}"
+            onChange={({ target }) => setRecipientAddress("" + target.value)}
+          />
+        </label>
+        {/* TODO */}
+      </form>
+    </Card>
+  );
+};
 
 const hasAssets = (account: AccountInfo) =>
   account.balance !== 0n || account.stakingBalance !== 0n;
