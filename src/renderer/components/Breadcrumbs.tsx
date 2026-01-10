@@ -21,8 +21,8 @@ export const BreadcrumbItem = ({
       className={clsx(
         "inline-flex items-center text-sm font-medium",
         onClick
-          ? "cursor-pointer text-neutral-400 hover:text-blue-600"
-          : "cursor-default text-neutral-600",
+          ? "cursor-pointer text-neutral-600 hover:text-blue-800"
+          : "cursor-default text-neutral-800",
       )}
       onClick={() => onClick?.()}
     >

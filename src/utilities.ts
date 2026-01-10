@@ -104,17 +104,7 @@ export const libernetPackageDefinition = loadProtoSync(
 
 const grpcObject = loadPackageDefinition(libernetPackageDefinition);
 
-export function unpackAny<T>(any: AnyProto): T {
-  const { type_url, value } = any as {
-    type_url: string;
-    value: Buffer | Uint8Array | string;
-  };
-
-  const typeName = type_url.split("/").pop();
-  if (!typeName) {
-    throw new Error(`invalid type_url: ${type_url}`);
-  }
-
+function getMessageType<T>(typeName: string): MessageTypeDefinition<T, T> {
   const messageType = (function fetch(
     parent: GrpcObject,
     components: string[],
@@ -125,10 +115,29 @@ export function unpackAny<T>(any: AnyProto): T {
       return parent[components[0]] as MessageTypeDefinition<T, T>;
     }
   })(grpcObject, typeName.split("."));
-
   if (!messageType) {
-    throw new Error(`unknown Any type: ${type_url}`);
+    throw new Error(`unknown type name: ${typeName}`);
   }
+  return messageType;
+}
 
+export function packAny<T>(proto: T, typeName: string): AnyProto {
+  const messageType = getMessageType<T>(typeName);
+  return {
+    type_url: `type.libernet.org/${typeName}`,
+    value: messageType.serialize(proto),
+  };
+}
+
+export function unpackAny<T>(any: AnyProto): T {
+  const { type_url, value } = any as {
+    type_url: string;
+    value: Buffer | Uint8Array | string;
+  };
+  const typeName = type_url.split("/").pop();
+  if (!typeName) {
+    throw new Error(`invalid type_url: ${type_url}`);
+  }
+  const messageType = getMessageType<T>(typeName);
   return messageType.deserialize(value as Buffer);
 }

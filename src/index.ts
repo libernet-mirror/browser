@@ -287,7 +287,11 @@ app.on("activate", () => {
 
 import { Mutex } from "./mutex";
 import { Wallet, WalletData } from "./wallet";
-import { TransactionQueryParams } from "./data";
+import {
+  type TransactionPayload,
+  type TransactionQueryParams,
+  type TransactionType,
+} from "./data";
 
 const walletFileMutex = new Mutex();
 
@@ -383,4 +387,10 @@ ipcMain.handle(
   "net/query-transactions",
   async (_, params: TransactionQueryParams) =>
     await (await libernet()).queryTransactions(params),
+);
+
+ipcMain.handle(
+  "net/submit-transaction",
+  async (_, type: TransactionType, payload: TransactionPayload) =>
+    await (await libernet()).submitTransaction(type, payload),
 );

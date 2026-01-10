@@ -7,13 +7,15 @@ const states = {
   neutral: "border-gray-300 bg-gray-50 text-gray-900 focus:border-blue-500",
 };
 
+export type InputValidation = "valid" | "invalid" | "neutral";
+
 export const Input = ({
   type = "text",
   state = "neutral",
   className,
   ...props
 }: ComponentPropsWithoutRef<"input"> & {
-  state?: "valid" | "invalid" | "neutral";
+  state?: InputValidation;
 }) => (
   <input
     type={type}
@@ -28,22 +30,23 @@ export const Input = ({
 
 export const ValidatedInput = ({
   value,
-  pattern,
+  validate,
   className,
   onFocus = null,
   onBlur = null,
   ...props
 }: ComponentPropsWithoutRef<"input"> & {
   value: string;
+  validate: (value: string) => boolean;
   onFocus?: (() => void) | null;
   onBlur?: (() => void) | null;
 }) => {
   const [focus, setFocus] = useState(false);
-  const state = useMemo<"valid" | "invalid" | "neutral">(() => {
+  const state = useMemo<InputValidation>(() => {
     if (focus) {
       return "neutral";
     } else if (value) {
-      if (new RegExp(pattern).test(value)) {
+      if (validate(value)) {
         return "valid";
       } else {
         return "invalid";
@@ -74,13 +77,37 @@ export const ValidatedInput = ({
   );
 };
 
+export const InputWithPattern = ({
+  value,
+  pattern,
+  className,
+  onFocus = null,
+  onBlur = null,
+  ...props
+}: ComponentPropsWithoutRef<"input"> & {
+  value: string;
+  onFocus?: (() => void) | null;
+  onBlur?: (() => void) | null;
+}) => {
+  return (
+    <ValidatedInput
+      value={value}
+      validate={(value) => new RegExp(pattern).test(value)}
+      className={className}
+      onFocus={onFocus}
+      onBlur={onBlur}
+      {...props}
+    />
+  );
+};
+
 export const TextArea = ({
   rows = 3,
   state = "neutral",
   className,
   ...props
 }: ComponentPropsWithoutRef<"textarea"> & {
-  state?: "valid" | "invalid" | "neutral";
+  state?: InputValidation;
 }) => (
   <textarea
     className={clsx(

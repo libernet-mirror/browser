@@ -1,6 +1,11 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
 
-import { type AccountInfo, type TransactionQueryParams } from "./data";
+import {
+  type AccountInfo,
+  type TransactionPayload,
+  type TransactionQueryParams,
+  type TransactionType,
+} from "./data";
 
 function makeEventHandler<Listener extends (...args: never[]) => void>(
   name: string,
@@ -62,4 +67,6 @@ contextBridge.exposeInMainWorld("libernet", {
     ipcRenderer.invoke("net/get-transaction", transactionHash),
   queryTransactions: (params: TransactionQueryParams) =>
     ipcRenderer.invoke("net/query-transactions", params),
+  submitTransaction: (type: TransactionType, payload: TransactionPayload) =>
+    ipcRenderer.invoke("net/submit-transaction", type, payload),
 });

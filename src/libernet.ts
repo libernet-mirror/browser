@@ -39,6 +39,7 @@ import {
   TransactionInfo,
   TransactionPayload,
   TransactionQueryParams,
+  TransactionType,
 } from "./data";
 import { Mutex } from "./mutex";
 import { Proxy } from "./proxy";
@@ -517,6 +518,29 @@ export class Libernet {
           )
             .then(resolve)
             .catch(reject);
+        },
+      );
+    });
+  }
+
+  public async submitTransaction(
+    type: TransactionType,
+    payload: TransactionPayload,
+  ): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this._client.broadcastTransaction(
+        {
+          transaction: {
+            // TODO
+          },
+          ttl: 2,
+        },
+        (error: unknown) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve();
+          }
         },
       );
     });

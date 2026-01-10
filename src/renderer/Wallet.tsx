@@ -12,6 +12,7 @@ import {
   DropdownItem,
   DropdownMenu,
 } from "./components/Dropdown";
+import { ValidatedInput } from "./components/Input";
 import {
   Table,
   TableBody,
@@ -28,10 +29,14 @@ import { PlusIcon } from "./icons/Plus";
 import { jazzicon } from "./Jazzicon";
 import { libernet } from "./Libernet";
 import Logo from "./Logo";
-import { formatBalance, useAsyncEffect } from "./Utilities";
+import {
+  bigIntToScalar,
+  formatLibAmount,
+  parseLibAmount,
+  useAsyncEffect,
+} from "./Utilities";
 import { Page as WalletLoginPage } from "./WalletLogin";
 import { Page as WalletSetupPage } from "./WalletSetup";
-import { ValidatedInput } from "./components/Input";
 
 const AccountTile = ({
   account,
@@ -120,7 +125,8 @@ const Balance = ({ accountAddress }: { accountAddress: string }) => {
       </p>
       {account && (
         <p className="prose mt-3 lg:prose-lg">
-          Your LIB balance is: <strong>{formatBalance(account.balance)}</strong>{" "}
+          Your LIB balance is:{" "}
+          <strong>{formatLibAmount(account.balance)}</strong>
           <br />
           <small>
             proven at block #{account.blockDescriptor.blockNumber} as of{" "}
@@ -232,8 +238,15 @@ const TransactionList = ({
   );
 };
 
-const NewTransaction = ({ onClose }: { onClose: () => void }) => {
+const NewTransaction = ({
+  senderAddress,
+  onClose,
+}: {
+  senderAddress: string;
+  onClose: () => void;
+}) => {
   const [recipientAddress, setRecipientAddress] = useState("");
+  const [amount, setAmount] = useState("");
   return (
     <Card className="m-3 flex grow flex-col">
       <Breadcrumbs className="mb-3">
@@ -248,20 +261,38 @@ const NewTransaction = ({ onClose }: { onClose: () => void }) => {
       </Breadcrumbs>
       <form
         className="mx-auto w-md"
-        onSubmit={(e) => {
+        onSubmit={async (e) => {
           e.preventDefault();
-          // TODO
+          await (
+            await libernet()
+          ).submitTransaction("send_coins", {
+            recipient: recipientAddress,
+            amount: bigIntToScalar(parseLibAmount(amount)),
+          });
         }}
       >
-        <label className="block text-sm font-medium text-neutral-600">
+        <label className="mb-3 block text-sm font-medium text-neutral-800">
           Recipient address:
           <ValidatedInput
             value={recipientAddress}
-            pattern="0[xX][0-9a-fA-F]{64}"
+            validate={(value) =>
+              value !== senderAddress && /^0x[0-9a-f]{64}$/i.test(value)
+            }
             onChange={({ target }) => setRecipientAddress("" + target.value)}
           />
         </label>
-        {/* TODO */}
+        <label className="mb-3 block text-sm font-medium text-neutral-800">
+          LIB amount:
+          <ValidatedInput
+            value={amount}
+            validate={(value) => /^[0-9]+(?:\.[0-9]+)?$/.test(value)}
+            onChange={({ target }) => setAmount("" + target.value)}
+          />
+        </label>
+        <div className="flex">
+          <span className="grow"></span>
+          <PrimaryButton type="submit">Send</PrimaryButton>
+        </div>
       </form>
     </Card>
   );
@@ -320,7 +351,12 @@ const Hello = () => {
               onNewTransaction={() => setView("new")}
             />
           ),
-          new: <NewTransaction onClose={() => setView("list")} />,
+          new: (
+            <NewTransaction
+              senderAddress={accounts[currentAccountIndex].address}
+              onClose={() => setView("list")}
+            />
+          ),
         }[view]
       }
     </div>
