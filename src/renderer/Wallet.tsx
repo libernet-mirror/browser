@@ -1,8 +1,10 @@
+import { clsx } from "clsx";
 import { useState } from "react";
 
 import { type AccountInfo, type TransactionInfo } from "../data";
 
 import { AccountAddress } from "./components/Address";
+import { Backdrop, BackdropProvider } from "./components/Backdrop";
 import { PrimaryButton } from "./components/Buttons";
 import { BreadcrumbItem, Breadcrumbs } from "./components/Breadcrumbs";
 import { Card } from "./components/Card";
@@ -141,9 +143,11 @@ const Balance = ({ accountAddress }: { accountAddress: string }) => {
 const TransactionList = ({
   accountAddress,
   onNewTransaction,
+  className = "",
 }: {
   accountAddress: string;
   onNewTransaction: () => void;
+  className?: string;
 }) => {
   const [transactions, setTransactions] = useState<TransactionInfo[] | null>(
     null,
@@ -175,7 +179,7 @@ const TransactionList = ({
     );
   }, [accountAddress]);
   return (
-    <Card className="relative m-3 flex grow flex-col">
+    <Card className={clsx("relative m-3 flex flex-col", className)}>
       <Breadcrumbs className="mb-3">
         <BreadcrumbItem active>
           <HomeIcon className="me-1.5 size-4" />
@@ -189,7 +193,7 @@ const TransactionList = ({
           <TableHeaderCell>to</TableHeaderCell>
           <TableHeaderCell>type</TableHeaderCell>
           <TableHeaderCell>amount</TableHeaderCell>
-          <TableHeaderCell>tx hash</TableHeaderCell>
+          <TableHeaderCell>hash</TableHeaderCell>
         </TableHeader>
         <TableBody>
           {transactions === null ? (
@@ -241,14 +245,16 @@ const TransactionList = ({
 const NewTransaction = ({
   senderAddress,
   onClose,
+  className = "",
 }: {
   senderAddress: string;
   onClose: () => void;
+  className?: string;
 }) => {
   const [recipientAddress, setRecipientAddress] = useState("");
   const [amount, setAmount] = useState("");
   return (
-    <Card className="m-3 flex grow flex-col">
+    <Card className={clsx("m-3 flex flex-col", className)}>
       <Breadcrumbs className="mb-3">
         <BreadcrumbItem onClick={onClose}>
           <HomeIcon className="me-1.5 size-4" />
@@ -322,44 +328,50 @@ const Hello = () => {
     return null;
   }
   return (
-    <div className="flex min-h-svh w-full flex-col bg-neutral-100">
-      <Navbar
-        accounts={accounts}
-        currentAccountIndex={currentAccountIndex}
-        onSwitchToAccount={async (index) => {
-          await libernet().switchAccount(index);
-          setCurrentAccountIndex(index);
-          setView("list");
-        }}
-        onSwitchToNextAccount={async () => {
-          const index = accounts.length;
-          const account = await libernet().getAccountByNumber(index);
-          if (accounts.length === index) {
-            setAccounts(accounts.concat(account));
+    <BackdropProvider>
+      <div className="flex min-h-svh w-full flex-col bg-neutral-100">
+        <Navbar
+          accounts={accounts}
+          currentAccountIndex={currentAccountIndex}
+          onSwitchToAccount={async (index) => {
             await libernet().switchAccount(index);
             setCurrentAccountIndex(index);
             setView("list");
+          }}
+          onSwitchToNextAccount={async () => {
+            const index = accounts.length;
+            const account = await libernet().getAccountByNumber(index);
+            if (accounts.length === index) {
+              setAccounts(accounts.concat(account));
+              await libernet().switchAccount(index);
+              setCurrentAccountIndex(index);
+              setView("list");
+            }
+          }}
+        />
+        <Backdrop className="flex grow flex-col">
+          <Balance accountAddress={accounts[currentAccountIndex].address} />
+          {
+            {
+              list: (
+                <TransactionList
+                  accountAddress={accounts[currentAccountIndex].address}
+                  onNewTransaction={() => setView("new")}
+                  className="grow"
+                />
+              ),
+              new: (
+                <NewTransaction
+                  senderAddress={accounts[currentAccountIndex].address}
+                  onClose={() => setView("list")}
+                  className="grow"
+                />
+              ),
+            }[view]
           }
-        }}
-      />
-      <Balance accountAddress={accounts[currentAccountIndex].address} />
-      {
-        {
-          list: (
-            <TransactionList
-              accountAddress={accounts[currentAccountIndex].address}
-              onNewTransaction={() => setView("new")}
-            />
-          ),
-          new: (
-            <NewTransaction
-              senderAddress={accounts[currentAccountIndex].address}
-              onClose={() => setView("list")}
-            />
-          ),
-        }[view]
-      }
-    </div>
+        </Backdrop>
+      </div>
+    </BackdropProvider>
   );
 };
 
