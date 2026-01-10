@@ -36,6 +36,7 @@ import {
 import {
   AccountInfo,
   BlockDescriptor,
+  CoinTransferTransactionPayload,
   TransactionInfo,
   TransactionPayload,
   TransactionQueryParams,
@@ -49,6 +50,7 @@ import {
   decodeTimestamp,
   encodeScalar,
   libernetPackageDefinition,
+  packAny,
   toScalar,
   unpackAny,
 } from "./utilities";
@@ -528,10 +530,34 @@ export class Libernet {
     payload: TransactionPayload,
   ): Promise<void> {
     return new Promise((resolve, reject) => {
+      const innerPayload = (() => {
+        switch (type) {
+          case "send_coins": {
+            const typedPayload = payload as CoinTransferTransactionPayload;
+            return {
+              transaction: "send_coins",
+              send_coins: {
+                recipient: encodeScalar(typedPayload.recipient),
+                amount: encodeScalar(typedPayload.amount),
+              },
+            };
+          }
+          case "create_program":
+            // TODO
+            throw new Error(
+              "create_program transactions are not implemented yet",
+            );
+          default:
+            throw new Error(
+              `invalid transaction type: ${JSON.stringify(type)}`,
+            );
+        }
+      })();
       this._client.broadcastTransaction(
         {
           transaction: {
-            // TODO
+            payload: packAny(innerPayload, "libernet.Transaction.Payload"),
+            // TODO: signature
           },
           ttl: 2,
         },

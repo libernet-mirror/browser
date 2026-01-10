@@ -46,12 +46,12 @@ export function formatLibAmount(balance: bigint): string {
 }
 
 export function parseLibAmount(balance: string): bigint {
-  const match = balance.match(/^([0-9]+)(?:\.([0-9]+))$/);
+  const match = balance.match(/^([0-9]+)(?:\.([0-9]+))?$/);
   if (!match) {
     throw new Error(`invalid LIB balance format: ${JSON.stringify(balance)}`);
   }
   const [units, fraction] = [match[1], match[2]].map((digits) =>
-    digits
+    (digits || "")
       .split("")
       .map((digit) => digit.charCodeAt(0) - 48)
       .reduce((a, b) => a * 10n + BigInt(b), 0n),
