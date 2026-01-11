@@ -243,16 +243,27 @@ const TransactionList = ({
 };
 
 const NewTransaction = ({
-  senderAddress,
+  senderAccount,
   onClose,
   className = "",
 }: {
-  senderAddress: string;
+  senderAccount: AccountInfo;
   onClose: () => void;
   className?: string;
 }) => {
   const [recipientAddress, setRecipientAddress] = useState("");
   const [amount, setAmount] = useState("");
+  const validateRecipientAddress = (address: string) =>
+    address !== senderAccount.address && /^0x[0-9a-f]{64}$/i.test(address);
+  const validateAmount = (value: string) => {
+    if (!/^[0-9]+(?:\.[0-9]+)?$/.test(value)) {
+      return false;
+    }
+    if (parseLibAmount(value) > senderAccount.balance) {
+      return false;
+    }
+    return true;
+  };
   return (
     <Card className={clsx("m-3 flex flex-col", className)}>
       <Breadcrumbs className="mb-3">
@@ -269,21 +280,24 @@ const NewTransaction = ({
         className="mx-auto w-md"
         onSubmit={async (e) => {
           e.preventDefault();
-          await (
-            await libernet()
-          ).submitTransaction("send_coins", {
-            recipient: recipientAddress,
-            amount: bigIntToScalar(parseLibAmount(amount)),
-          });
+          if (
+            validateRecipientAddress(recipientAddress) &&
+            validateAmount(amount)
+          ) {
+            await (
+              await libernet()
+            ).submitTransaction("send_coins", {
+              recipient: recipientAddress,
+              amount: bigIntToScalar(parseLibAmount(amount)),
+            });
+          }
         }}
       >
         <label className="mb-3 block text-sm font-medium text-neutral-800">
           Recipient address:
           <ValidatedInput
             value={recipientAddress}
-            validate={(value) =>
-              value !== senderAddress && /^0x[0-9a-f]{64}$/i.test(value)
-            }
+            validate={validateRecipientAddress}
             onChange={({ target }) => setRecipientAddress("" + target.value)}
           />
         </label>
@@ -291,13 +305,21 @@ const NewTransaction = ({
           LIB amount:
           <ValidatedInput
             value={amount}
-            validate={(value) => /^[0-9]+(?:\.[0-9]+)?$/.test(value)}
+            validate={validateAmount}
             onChange={({ target }) => setAmount("" + target.value)}
           />
         </label>
         <div className="flex">
           <span className="grow"></span>
-          <PrimaryButton type="submit">Send</PrimaryButton>
+          <PrimaryButton
+            type="submit"
+            disabled={
+              !validateRecipientAddress(recipientAddress) ||
+              !validateAmount(amount)
+            }
+          >
+            Submit
+          </PrimaryButton>
         </div>
       </form>
     </Card>
@@ -362,7 +384,7 @@ const Hello = () => {
               ),
               new: (
                 <NewTransaction
-                  senderAddress={accounts[currentAccountIndex].address}
+                  senderAccount={accounts[currentAccountIndex]}
                   onClose={() => setView("list")}
                   className="grow"
                 />
