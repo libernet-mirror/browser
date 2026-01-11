@@ -33,9 +33,8 @@ export const Dropdown = ({
         setOpen(open: boolean) {
           if (open) {
             backdrop.activate(() => setOpen(false));
-            setOpen(open);
+            setOpen(true);
           } else {
-            setOpen(open);
             backdrop.deactivate();
           }
         },
