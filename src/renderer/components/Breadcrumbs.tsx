@@ -1,6 +1,9 @@
 import { clsx } from "clsx";
 import { type PropsWithChildren } from "react";
 
+import { GreaterIcon } from "../icons/Greater";
+import { HomeIcon } from "../icons/Home";
+
 export const Breadcrumbs = ({
   children,
   className = "",
@@ -12,8 +15,12 @@ export const Breadcrumbs = ({
 
 export const BreadcrumbItem = ({
   children,
+  home = false,
   onClick = null,
-}: PropsWithChildren & { active?: boolean; onClick?: () => void }) => (
+}: PropsWithChildren & {
+  home?: boolean;
+  onClick?: () => void;
+}) => (
   <li
     className={clsx(
       "inline-flex items-center text-sm font-medium",
@@ -23,6 +30,11 @@ export const BreadcrumbItem = ({
     )}
     onClick={() => onClick?.()}
   >
+    {home ? (
+      <HomeIcon className="me-1.5 size-4" />
+    ) : (
+      <GreaterIcon className="me-1.5 size-4" />
+    )}
     {children}
   </li>
 );

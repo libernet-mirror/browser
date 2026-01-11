@@ -24,8 +24,6 @@ import {
   TableRow,
 } from "./components/Tables";
 import { Tooltip, TooltipContainer } from "./components/Tooltip";
-import { GreaterIcon } from "./icons/Greater";
-import { HomeIcon } from "./icons/Home";
 import { PlusIcon } from "./icons/Plus";
 
 import { jazzicon } from "./Jazzicon";
@@ -181,10 +179,7 @@ const TransactionList = ({
   return (
     <Card className={clsx("relative m-3 flex flex-col", className)}>
       <Breadcrumbs className="mb-3">
-        <BreadcrumbItem active>
-          <HomeIcon className="me-1.5 size-4" />
-          Account overview
-        </BreadcrumbItem>
+        <BreadcrumbItem home>Account overview</BreadcrumbItem>
       </Breadcrumbs>
       <Table className="grow">
         <TableHeader>
@@ -267,14 +262,10 @@ const NewTransaction = ({
   return (
     <Card className={clsx("m-3 flex flex-col", className)}>
       <Breadcrumbs className="mb-3">
-        <BreadcrumbItem onClick={onClose}>
-          <HomeIcon className="me-1.5 size-4" />
+        <BreadcrumbItem home onClick={onClose}>
           Account overview
         </BreadcrumbItem>
-        <BreadcrumbItem>
-          <GreaterIcon className="me-1.5 size-4" />
-          New transaction
-        </BreadcrumbItem>
+        <BreadcrumbItem>New transaction</BreadcrumbItem>
       </Breadcrumbs>
       <form
         className="mx-auto w-md"
@@ -335,16 +326,14 @@ const Hello = () => {
   const [view, setView] = useState<"list" | "new">("list");
   useAsyncEffect(async () => {
     let newAccounts = accounts;
-    let stop = false;
     let account: AccountInfo;
     let index = 0;
-    do {
-      account = await libernet().getAccountByNumber(index++);
+    while (
+      ((account = await libernet().getAccountByNumber(index)),
+      !index++ || hasAssets(account))
+    ) {
       setAccounts((newAccounts = newAccounts.concat(account)));
-    } while (!stop && hasAssets(account));
-    return () => {
-      stop = true;
-    };
+    }
   }, []);
   if (!accounts.length) {
     return null;
