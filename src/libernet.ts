@@ -540,7 +540,7 @@ export class Libernet {
           case "createProgram":
             // TODO
             throw new Error(
-              "create_program transactions are not implemented yet",
+              "createProgram transactions are not implemented yet",
             );
           default:
             throw new Error(

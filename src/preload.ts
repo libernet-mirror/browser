@@ -27,6 +27,9 @@ type ViewListener = (view: string) => void;
 type AccountListener = (account: AccountInfo) => void;
 
 contextBridge.exposeInMainWorld("libernet", {
+  getHomePage: () => ipcRenderer.invoke("settings/get-home-page"),
+  setHomePage: (homePage: string) =>
+    ipcRenderer.invoke("settings/set-home-page", homePage),
   getView: () => ipcRenderer.invoke("root/get-view"),
   getUrl: () => ipcRenderer.invoke("root/get-url"),
   setUrl: (url: string) => ipcRenderer.invoke("root/set-url", url),

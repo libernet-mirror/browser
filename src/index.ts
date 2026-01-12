@@ -12,6 +12,7 @@ import {
   WebContentsView,
 } from "electron";
 
+import { getHomeAddress, saveHomeAddress } from "./config";
 import {
   type AccountListener,
   getBootstrapNodes,
@@ -40,11 +41,15 @@ const CONTROL_BAR_HEIGHT = 45;
 const SYSTEM_URL_SETTINGS = "liber://settings";
 const SYSTEM_URL_WALLET = "liber://wallet";
 
-const DEFAULT_HOME_ADDRESS = "https://www.google.com/";
 const DEFAULT_SEARCH_ENGINE = "https://www.google.com/search?q=$QUERY$";
 
-const URL_PROTOCOL_PATTERN = /^([a-z]+):\/\//;
-const DNS_PREFIX_PATTERN = /^[_a-z0-9-]+(?:\.[_a-z0-9-]+)*(\/|$)/i;
+const URL_PROTOCOL_PATTERN =
+  /^([a-z]+):\/\/[_a-z0-9-]+(?:\.[_a-z0-9-]+)*(?:\/|$)/i;
+const URL_PREFIX_PATTERN = /^https?:\/\/[_a-z0-9-]+(?:\.[_a-z0-9-]+)*(?:\/|$)/i;
+const DNS_NAME_PATTERN = /^[_a-z0-9-]+(?:\.[_a-z0-9-]+)*$/i;
+const DNS_PREFIX_PATTERN = /^[_a-z0-9-]+(?:\.[_a-z0-9-]+)*(?:\/|$)/i;
+const DNS_HEURISTIC_PREFIX_PATTERN =
+  /^(?:localhost|(?:[_a-z0-9-]+(?:\.[_a-z0-9-]+)+))(?:\/|$)/i;
 
 const createWindow = async () => {
   const mainWindow = new BaseWindow({
@@ -72,7 +77,7 @@ const createWindow = async () => {
 
   let viewType: "web" | "settings" | "wallet" = "web";
   let currentView: WebContentsView | null = null;
-  let currentUrl = DEFAULT_HOME_ADDRESS;
+  let currentUrl = await getHomeAddress();
 
   let accountListener: AccountListener | null = null;
 
@@ -133,7 +138,7 @@ const createWindow = async () => {
   const setWebView = async (url: string) => {
     console.log(`setWebView(${JSON.stringify(url)})`);
     if (!URL_PROTOCOL_PATTERN.test(url)) {
-      if (DNS_PREFIX_PATTERN.test(url)) {
+      if (DNS_HEURISTIC_PREFIX_PATTERN.test(url)) {
         url = "http://" + url;
       } else {
         url = DEFAULT_SEARCH_ENGINE.replace("$QUERY$", encodeURIComponent(url));
@@ -304,6 +309,24 @@ const walletFileMutex = new Mutex();
 function getWalletPath(): string {
   return path.join(app.getPath("userData"), "wallet.json");
 }
+
+ipcMain.handle("settings/get-home-page", () => getHomeAddress());
+
+ipcMain.handle("settings/set-home-page", async (_, homePage: string) => {
+  homePage = (() => {
+    if (URL_PREFIX_PATTERN.test(homePage)) {
+      return homePage;
+    } else if (DNS_NAME_PATTERN.test(homePage)) {
+      return `https://${homePage}/`;
+    } else if (DNS_PREFIX_PATTERN.test(homePage)) {
+      return "https://" + homePage;
+    } else {
+      throw new Error(`invalid URL: ${JSON.stringify(homePage)}`);
+    }
+  })();
+  await saveHomeAddress(homePage);
+  return homePage;
+});
 
 ipcMain.handle("net/get-node-list", () => getBootstrapNodes());
 

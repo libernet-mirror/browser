@@ -1,15 +1,84 @@
-import { useState } from "react";
+import { clsx } from "clsx";
+import { PropsWithChildren, useState } from "react";
 
 import { PrimaryButton } from "./components/Buttons";
 import { Card } from "./components/Card";
-import { TextArea } from "./components/Input";
+import { Input, TextArea } from "./components/Input";
+import { GearIcon } from "./icons/Gear";
 import { NetworkIcon } from "./icons/Network";
 import { SpinnerIcon } from "./icons/Spinner";
 
 import { libernet } from "./Libernet";
 import { useAsyncEffect } from "./Utilities";
 
-type ViewType = "network";
+type ViewType = "general" | "network";
+
+const PageTitle = ({ children }: PropsWithChildren) => (
+  <h1 className="text-2xl font-bold">{children}</h1>
+);
+
+const HomePageField = () => {
+  const [previousValue, setPreviousValue] = useState("");
+  const [homePage, setHomePage] = useState("");
+  const [validation, setValidation] = useState<string | null>(null);
+  useAsyncEffect(async () => {
+    const homePage = await libernet().getHomePage();
+    setPreviousValue(homePage);
+    setHomePage(homePage);
+  }, []);
+  return (
+    <label>
+      Home page:
+      <Input
+        value={homePage}
+        state={(() => {
+          switch (validation) {
+            case null:
+              return "neutral";
+            case "":
+              return "valid";
+            default:
+              return "invalid";
+          }
+        })()}
+        onFocus={() => {
+          setValidation(null);
+          setPreviousValue(homePage);
+        }}
+        onChange={({ target }) => setHomePage(target.value)}
+        onBlur={async ({ target }) => {
+          let value;
+          try {
+            value = await libernet().setHomePage(target.value);
+          } catch (e) {
+            setValidation((e as Error).message);
+            return;
+          }
+          setHomePage(value);
+          if (value !== previousValue) {
+            setValidation("");
+          } else {
+            setValidation(null);
+          }
+        }}
+      />
+    </label>
+  );
+};
+
+const GeneralSettings = () => {
+  return (
+    <>
+      <PageTitle>General Settings</PageTitle>
+      <form
+        className="mt-2 flex flex-col gap-2"
+        onSubmit={(e) => e.preventDefault()}
+      >
+        <HomePageField />
+      </form>
+    </>
+  );
+};
 
 const NetworkSettings = () => {
   const [addresses, setAddresses] = useState<string[]>([]);
@@ -24,7 +93,7 @@ const NetworkSettings = () => {
 
   return (
     <>
-      <h1 className="text-2xl font-bold">Network Settings</h1>
+      <PageTitle>Network Settings</PageTitle>
       <form
         className="mt-2 flex flex-col gap-2"
         onSubmit={async () => {
@@ -75,6 +144,8 @@ const NetworkSettings = () => {
 
 const Settings = ({ view }: { view: ViewType }) => {
   switch (view) {
+    case "general":
+      return <GeneralSettings />;
     case "network":
       return <NetworkSettings />;
     default:
@@ -82,16 +153,57 @@ const Settings = ({ view }: { view: ViewType }) => {
   }
 };
 
+const Navbar = ({ children }: PropsWithChildren) => (
+  <nav className="flex w-40 flex-col bg-white shadow-sm">{children}</nav>
+);
+
+const NavItem = ({
+  active = false,
+  onSelect,
+  children,
+}: PropsWithChildren & {
+  active?: boolean;
+  onSelect: () => void;
+}) => (
+  <label
+    className={clsx(
+      "w-full cursor-pointer p-2 hover:bg-neutral-100 active:bg-neutral-200",
+      active ? "bg-neutral-100" : "bg-transparent",
+    )}
+  >
+    <input
+      type="radio"
+      name="view"
+      checked={active}
+      hidden
+      onChange={({ target }) => {
+        if (target.checked) {
+          onSelect();
+        }
+      }}
+    />
+    {children}
+  </label>
+);
+
 export const Page = () => {
-  const [view, setView] = useState<ViewType>("network");
+  const [view, setView] = useState<ViewType>("general");
   return (
     <div className="flex min-h-svh w-full flex-row bg-neutral-100">
-      <nav className="flex w-40 flex-col bg-white shadow-sm">
-        <label className="w-full cursor-pointer bg-transparent p-2 hover:bg-neutral-100 active:bg-neutral-200">
-          <input type="radio" checked hidden />
+      <Navbar>
+        <NavItem
+          active={view === "general"}
+          onSelect={() => setView("general")}
+        >
+          <GearIcon className="me-3 inline-block size-6" /> General
+        </NavItem>
+        <NavItem
+          active={view === "network"}
+          onSelect={() => setView("network")}
+        >
           <NetworkIcon className="me-3 inline-block size-6" /> Network
-        </label>
-      </nav>
+        </NavItem>
+      </Navbar>
       <Card className="m-3 grow">
         <Settings view={view} />
       </Card>

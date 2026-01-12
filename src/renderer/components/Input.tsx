@@ -35,7 +35,7 @@ export const ValidatedInput = ({
   onFocus = null,
   onBlur = null,
   ...props
-}: ComponentPropsWithoutRef<"input"> & {
+}: Omit<ComponentPropsWithoutRef<"input">, "pattern"> & {
   value: string;
   validate: (value: string) => boolean;
   onFocus?: (() => void) | null;
@@ -84,22 +84,21 @@ export const InputWithPattern = ({
   onFocus = null,
   onBlur = null,
   ...props
-}: ComponentPropsWithoutRef<"input"> & {
+}: Omit<ComponentPropsWithoutRef<"input">, "pattern"> & {
   value: string;
+  pattern: RegExp | string;
   onFocus?: (() => void) | null;
   onBlur?: (() => void) | null;
-}) => {
-  return (
-    <ValidatedInput
-      value={value}
-      validate={(value) => new RegExp(pattern).test(value)}
-      className={className}
-      onFocus={onFocus}
-      onBlur={onBlur}
-      {...props}
-    />
-  );
-};
+}) => (
+  <ValidatedInput
+    value={value}
+    validate={(value) => new RegExp(pattern).test(value)}
+    className={className}
+    onFocus={onFocus}
+    onBlur={onBlur}
+    {...props}
+  />
+);
 
 export const TextArea = ({
   rows = 3,

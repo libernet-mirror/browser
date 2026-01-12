@@ -9,6 +9,8 @@ import {
 export type ContentView = "control" | "web" | "settings" | "wallet";
 
 export interface LibernetAPI {
+  getHomePage(): Promise<string>;
+  setHomePage(homePage: string): Promise<string>;
   getView(): Promise<ContentView>;
   getUrl(): Promise<string>;
   setUrl(url: string): Promise<void>;
