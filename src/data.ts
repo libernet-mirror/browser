@@ -49,12 +49,12 @@ export const TRANSACTION_TYPES = new Set<TransactionType>([
 
 export interface BlockRewardTransactionPayload {
   recipient: string;
-  amount: string;
+  amount: bigint;
 }
 
 export interface CoinTransferTransactionPayload {
   recipient: string;
-  amount: string;
+  amount: bigint;
 }
 
 export interface ProgramCreationTransactionPayload {
@@ -69,14 +69,14 @@ export type TransactionPayload =
 export class TransactionInfo {
   public constructor(
     public readonly hash: string,
-    public readonly blockDescriptor: BlockDescriptor,
+    public readonly blockDescriptor: BlockDescriptor | null,
     public readonly signerAddress: string,
     public readonly chainId: number,
     public readonly nonce: number,
     public readonly type: TransactionType,
     public readonly payload: TransactionPayload,
   ) {
-    if (chainId !== blockDescriptor.chainId) {
+    if (blockDescriptor && chainId !== blockDescriptor.chainId) {
       throw new Error(
         `invalid network ID (got ${chainId}, want ${blockDescriptor.chainId})`,
       );

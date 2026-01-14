@@ -1,11 +1,14 @@
-import { clsx } from "clsx";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 
-import { type AccountInfo, type TransactionInfo } from "../data";
+import {
+  type AccountInfo,
+  type BlockRewardTransactionPayload,
+  type CoinTransferTransactionPayload,
+  type TransactionInfo,
+} from "../data";
 
-import { AccountAddress } from "./components/Address";
 import { Backdrop, BackdropProvider } from "./components/Backdrop";
-import { PrimaryButton } from "./components/Buttons";
+import { PrimaryButton, SecondaryButton } from "./components/Buttons";
 import { BreadcrumbItem, Breadcrumbs } from "./components/Breadcrumbs";
 import { Card } from "./components/Card";
 import {
@@ -15,6 +18,7 @@ import {
   DropdownMenu,
 } from "./components/Dropdown";
 import { ValidatedInput } from "./components/Input";
+import { Scalar } from "./components/Scalar";
 import {
   Table,
   TableBody,
@@ -24,17 +28,15 @@ import {
   TableRow,
 } from "./components/Tables";
 import { Tooltip, TooltipContainer } from "./components/Tooltip";
+import { LeftIcon } from "./icons/Left";
 import { PlusIcon } from "./icons/Plus";
+import { RightIcon } from "./icons/Right";
+import { SpinnerIcon } from "./icons/Spinner";
 
 import { jazzicon } from "./Jazzicon";
 import { libernet } from "./Libernet";
 import Logo from "./Logo";
-import {
-  bigIntToScalar,
-  formatLibAmount,
-  parseLibAmount,
-  useAsyncEffect,
-} from "./Utilities";
+import { formatLibAmount, parseLibAmount, useAsyncEffect } from "./Utilities";
 import { Page as WalletLoginPage } from "./WalletLogin";
 import { Page as WalletSetupPage } from "./WalletSetup";
 
@@ -121,7 +123,7 @@ const Balance = ({ accountAddress }: { accountAddress: string }) => {
   return (
     <Card clip={false} className="mx-auto mt-3">
       <p className="prose lg:prose-lg">
-        Hello <AccountAddress address={account?.address || accountAddress} />
+        Hello <Scalar value={account?.address || accountAddress} />
       </p>
       {account && (
         <p className="prose mt-3 lg:prose-lg">
@@ -138,14 +140,103 @@ const Balance = ({ accountAddress }: { accountAddress: string }) => {
   );
 };
 
+const TransactionRow = ({
+  accountAddress,
+  transaction,
+}: {
+  accountAddress: string;
+  transaction: TransactionInfo;
+}) => {
+  const { hash, blockDescriptor, signerAddress, type, payload } = transaction;
+  const recipient = ((): string | null => {
+    switch (type) {
+      case "blockReward":
+        return (payload as BlockRewardTransactionPayload).recipient;
+      case "sendCoins":
+        return (payload as CoinTransferTransactionPayload).recipient;
+      default:
+        return null;
+    }
+  })();
+  const uiType = (() => {
+    switch (type) {
+      case "blockReward":
+        if (recipient !== accountAddress) {
+          return "none";
+        } else {
+          return "received";
+        }
+      case "sendCoins":
+        if (recipient === accountAddress) {
+          return "received";
+        } else if (signerAddress === accountAddress) {
+          return "sent";
+        } else {
+          return "none";
+        }
+      default:
+        return "none";
+    }
+  })();
+  const amount = (() => {
+    switch (type) {
+      case "blockReward":
+        return (payload as CoinTransferTransactionPayload).amount;
+      case "sendCoins":
+        return (payload as CoinTransferTransactionPayload).amount;
+      default:
+        return null;
+    }
+  })();
+  return (
+    <TableRow>
+      <TableCell>{blockDescriptor.timestamp.toLocaleString()}</TableCell>
+      <TableCell>
+        {signerAddress !== accountAddress ? (
+          <Scalar value={signerAddress} maxLength={15} />
+        ) : (
+          "You"
+        )}
+      </TableCell>
+      <TableCell>
+        {recipient !== accountAddress
+          ? recipient && <Scalar value={recipient} maxLength={15} />
+          : "You"}
+      </TableCell>
+      <TableCell className="text-nowrap">
+        {((): ReactNode => {
+          switch (uiType) {
+            case "sent":
+              return (
+                <>
+                  <RightIcon className="inline size-4 text-red-500" /> sent
+                </>
+              );
+            case "received":
+              return (
+                <>
+                  <LeftIcon className="inline size-4 text-green-500" /> received
+                </>
+              );
+            default:
+              return null;
+          }
+        })()}
+      </TableCell>
+      <TableCell>{amount && formatLibAmount(amount, 3)}</TableCell>
+      <TableCell>
+        <Scalar value={hash} maxLength={15} />
+      </TableCell>
+    </TableRow>
+  );
+};
+
 const TransactionList = ({
   accountAddress,
   onNewTransaction,
-  className = "",
 }: {
   accountAddress: string;
   onNewTransaction: () => void;
-  className?: string;
 }) => {
   const [transactions, setTransactions] = useState<TransactionInfo[] | null>(
     null,
@@ -170,16 +261,18 @@ const TransactionList = ({
         .flat()
         .sort(
           (first, second) =>
-            first.blockDescriptor.timestamp.valueOf() -
-            second.blockDescriptor.timestamp.valueOf(),
+            second.blockDescriptor.timestamp.valueOf() -
+            first.blockDescriptor.timestamp.valueOf(),
         )
         .slice(0, 10),
     );
   }, [accountAddress]);
   return (
-    <Card className={clsx("relative m-3 flex flex-col", className)}>
+    <Card className="relative m-3 flex grow flex-col">
       <Breadcrumbs className="mb-3">
-        <BreadcrumbItem home>Account overview</BreadcrumbItem>
+        <BreadcrumbItem home active>
+          Account overview
+        </BreadcrumbItem>
       </Breadcrumbs>
       <Table className="grow">
         <TableHeader>
@@ -198,19 +291,11 @@ const TransactionList = ({
               </TableCell>
             </TableRow>
           ) : transactions.length > 0 ? (
-            transactions.map(({ blockDescriptor, signerAddress }) => (
-              <TableRow>
-                <TableCell>
-                  {blockDescriptor.timestamp.toLocaleString()}
-                </TableCell>
-                <TableCell>
-                  {signerAddress !== accountAddress ? (
-                    <pre>{signerAddress}</pre>
-                  ) : (
-                    <>You ({signerAddress})</>
-                  )}
-                </TableCell>
-              </TableRow>
+            transactions.map((transaction) => (
+              <TransactionRow
+                accountAddress={accountAddress}
+                transaction={transaction}
+              />
             ))
           ) : (
             <TableRow>
@@ -222,11 +307,7 @@ const TransactionList = ({
         </TableBody>
       </Table>
       <TooltipContainer absolute className="right-0 bottom-0 mr-6 mb-6">
-        <PrimaryButton
-          round
-          className="cursor-pointer shadow-md"
-          onClick={onNewTransaction}
-        >
+        <PrimaryButton round className="shadow-md" onClick={onNewTransaction}>
           <PlusIcon className="size-6" />
         </PrimaryButton>
         <Tooltip anchor="right" className="whitespace-nowrap">
@@ -239,15 +320,16 @@ const TransactionList = ({
 
 const NewTransaction = ({
   senderAccount,
-  onClose,
-  className = "",
+  onCancel,
+  onDone,
 }: {
   senderAccount: AccountInfo;
-  onClose: () => void;
-  className?: string;
+  onCancel: () => void;
+  onDone: (transaction: TransactionInfo) => void;
 }) => {
   const [recipientAddress, setRecipientAddress] = useState("");
   const [amount, setAmount] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const validateRecipientAddress = (address: string) =>
     address !== senderAccount.address && /^0x[0-9a-f]{64}$/i.test(address);
   const validateAmount = (value: string) => {
@@ -260,12 +342,12 @@ const NewTransaction = ({
     return true;
   };
   return (
-    <Card className={clsx("m-3 flex flex-col", className)}>
+    <Card className="m-3 flex grow flex-col">
       <Breadcrumbs className="mb-3">
-        <BreadcrumbItem home onClick={onClose}>
+        <BreadcrumbItem home onClick={onCancel}>
           Account overview
         </BreadcrumbItem>
-        <BreadcrumbItem>New transaction</BreadcrumbItem>
+        <BreadcrumbItem active>New transaction</BreadcrumbItem>
       </Breadcrumbs>
       <form
         className="mx-auto w-md"
@@ -275,12 +357,18 @@ const NewTransaction = ({
             validateRecipientAddress(recipientAddress) &&
             validateAmount(amount)
           ) {
-            await (
-              await libernet()
-            ).submitTransaction("sendCoins", {
-              recipient: recipientAddress,
-              amount: bigIntToScalar(parseLibAmount(amount)),
-            });
+            let transaction: TransactionInfo;
+            try {
+              setSubmitting(true);
+              transaction = await libernet().submitTransaction("sendCoins", {
+                recipient: recipientAddress,
+                amount: parseLibAmount(amount),
+              });
+            } catch (e) {
+              setSubmitting(false);
+              throw e;
+            }
+            onDone(transaction);
           }
         }}
       >
@@ -300,16 +388,18 @@ const NewTransaction = ({
             onChange={({ target }) => setAmount("" + target.value)}
           />
         </label>
-        <div className="flex">
+        <div className="flex gap-x-3">
           <span className="grow"></span>
+          <SecondaryButton onClick={onCancel}>Back</SecondaryButton>
           <PrimaryButton
             type="submit"
             disabled={
+              submitting ||
               !validateRecipientAddress(recipientAddress) ||
               !validateAmount(amount)
             }
           >
-            Submit
+            {submitting && <SpinnerIcon className="me-3 size-4" />} Submit
           </PrimaryButton>
         </div>
       </form>
@@ -317,13 +407,71 @@ const NewTransaction = ({
   );
 };
 
+const TransactionReceipt = ({
+  transaction: { hash, signerAddress, chainId, nonce, type, payload },
+  onClose,
+}: {
+  transaction: TransactionInfo;
+  onClose: () => void;
+}) => (
+  <Card className="m-3 flex grow flex-col">
+    <Breadcrumbs className="mb-3">
+      <BreadcrumbItem home onClick={onClose}>
+        Account overview
+      </BreadcrumbItem>
+      <BreadcrumbItem>New transaction</BreadcrumbItem>
+      <BreadcrumbItem active>Receipt</BreadcrumbItem>
+    </Breadcrumbs>
+    <form
+      className="w-xxl mx-auto text-sm font-medium text-neutral-800"
+      onSubmit={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+    >
+      <div className="mb-3">
+        Thank you. Your transaction has been recorded and should be included in
+        a block soon.
+      </div>
+      <label className="mb-3 block">
+        Transaction hash: <Scalar value={hash} />
+      </label>
+      <label className="mb-3 block">
+        Signer address: <Scalar value={signerAddress} />
+      </label>
+      <label className="mb-3 block">Chain ID: {chainId}</label>
+      <label className="mb-3 block">Nonce: {nonce}</label>
+      {type === "sendCoins" && (
+        <>
+          <label className="mb-3 block">
+            Recipient address:{" "}
+            <Scalar
+              value={(payload as CoinTransferTransactionPayload).recipient}
+            />
+          </label>
+          <label className="mb-3 block">
+            amount: LIB{" "}
+            {formatLibAmount(
+              (payload as CoinTransferTransactionPayload).amount,
+            )}
+          </label>
+        </>
+      )}
+      <div className="flex">
+        <span className="grow"></span>
+        <SecondaryButton onClick={onClose}>Close</SecondaryButton>
+      </div>
+    </form>
+  </Card>
+);
+
 const hasAssets = (account: AccountInfo) =>
   account.balance !== 0n || account.stakingBalance !== 0n;
 
 const Hello = () => {
   const [accounts, setAccounts] = useState<AccountInfo[]>([]);
   const [currentAccountIndex, setCurrentAccountIndex] = useState(0);
-  const [view, setView] = useState<"list" | "new">("list");
+  const [view, setView] = useState<"list" | "new" | TransactionInfo>("list");
   useAsyncEffect(async () => {
     let newAccounts = accounts;
     let account: AccountInfo;
@@ -362,24 +510,34 @@ const Hello = () => {
         />
         <Backdrop className="flex grow flex-col">
           <Balance accountAddress={accounts[currentAccountIndex].address} />
-          {
-            {
-              list: (
-                <TransactionList
-                  accountAddress={accounts[currentAccountIndex].address}
-                  onNewTransaction={() => setView("new")}
-                  className="grow"
-                />
-              ),
-              new: (
-                <NewTransaction
-                  senderAccount={accounts[currentAccountIndex]}
-                  onClose={() => setView("list")}
-                  className="grow"
-                />
-              ),
-            }[view]
-          }
+          {(() => {
+            switch (view) {
+              case "list":
+                return (
+                  <TransactionList
+                    accountAddress={accounts[currentAccountIndex].address}
+                    onNewTransaction={() => setView("new")}
+                  />
+                );
+              case "new":
+                return (
+                  <NewTransaction
+                    senderAccount={accounts[currentAccountIndex]}
+                    onCancel={() => setView("list")}
+                    onDone={(transaction: TransactionInfo) =>
+                      setView(transaction)
+                    }
+                  />
+                );
+              default:
+                return (
+                  <TransactionReceipt
+                    transaction={view}
+                    onClose={() => setView("list")}
+                  />
+                );
+            }
+          })()}
         </Backdrop>
       </div>
     </BackdropProvider>

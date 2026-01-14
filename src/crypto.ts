@@ -3,6 +3,7 @@ import { Mutex } from "./mutex";
 import type {
   poseidon_hash,
   BinaryMerkleProof32,
+  RemoteAccount,
   TernaryMerkleProof,
   Wallet,
 } from "../crypto-bindings/crypto";
@@ -87,4 +88,11 @@ export async function loadWallet(
 ): Promise<Wallet> {
   const cls = await CryptoLoader.load<typeof Wallet>("Wallet");
   return cls.load(seed, commitment, y);
+}
+
+export async function createRemoteAccount(
+  publicKey: string,
+): Promise<RemoteAccount> {
+  const cls = await CryptoLoader.load<typeof RemoteAccount>("RemoteAccount");
+  return new cls(publicKey);
 }

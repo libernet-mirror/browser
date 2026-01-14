@@ -30,6 +30,7 @@ import type {
 
 import {
   createBinaryMerkleProof32,
+  createRemoteAccount,
   createTernaryMerkleProof,
   poseidonHash,
 } from "./crypto";
@@ -47,17 +48,22 @@ import { Proxy } from "./proxy";
 import {
   decodeBigInt,
   decodeLong,
+  decodePointG1,
   decodeScalar,
   decodeTimestamp,
+  encodeBigInt,
+  encodeMessageCanonical,
+  encodePointG1,
+  encodePointG2,
   encodeScalar,
   libernetPackageDefinition,
-  packAny,
   toScalar,
   unpackAny,
 } from "./utilities";
 import { Wallet } from "./wallet";
 
 export const DEFAULT_BOOTSTRAP_NODE_ADDRESSES: string[] = ["localhost:4443"];
+export const CHAIN_ID = 42;
 
 const packageDefinition = loadPackageDefinition(libernetPackageDefinition)
   .libernet as GrpcObject;
@@ -143,19 +149,15 @@ export class Libernet {
   private static async _decodeBlockDescriptor(
     proto: BlockDescriptorProto,
   ): Promise<BlockDescriptor> {
-    const blockHash = decodeScalar(proto.blockHash.value);
+    const blockHash = decodeScalar(proto.blockHash);
     const chainId = parseInt("" + proto.chainId, 10);
     const blockNumber = parseInt("" + proto.blockNumber, 10);
-    const previousBlockHash = decodeScalar(proto.previousBlockHash.value);
+    const previousBlockHash = decodeScalar(proto.previousBlockHash);
     const timestamp = decodeTimestamp(proto.timestamp);
-    const networkTopologyRootHash = decodeScalar(
-      proto.networkTopologyRootHash.value,
-    );
-    const transactionsRootHash = decodeScalar(proto.transactionsRootHash.value);
-    const accountsRootHash = decodeScalar(proto.accountsRootHash.value);
-    const programStorageRootHash = decodeScalar(
-      proto.programStorageRootHash.value,
-    );
+    const networkTopologyRootHash = decodeScalar(proto.networkTopologyRootHash);
+    const transactionsRootHash = decodeScalar(proto.transactionsRootHash);
+    const accountsRootHash = decodeScalar(proto.accountsRootHash);
+    const programStorageRootHash = decodeScalar(proto.programStorageRootHash);
     const computedHash = await poseidonHash([
       toScalar(chainId),
       toScalar(blockNumber),
@@ -190,11 +192,11 @@ export class Libernet {
     rootHash: string,
   ): Promise<BinaryMerkleProof32> {
     return await createBinaryMerkleProof32(
-      decodeScalar(proto.key.value),
+      decodeScalar(proto.key),
       valueAsScalar,
       rootHash,
       proto.path
-        .map((node) => node.childHashes.map((hash) => decodeScalar(hash.value)))
+        .map((node) => node.childHashes.map((hash) => decodeScalar(hash)))
         .flat(),
     );
   }
@@ -205,11 +207,11 @@ export class Libernet {
     rootHash: string,
   ): Promise<TernaryMerkleProof> {
     return await createTernaryMerkleProof(
-      decodeScalar(proto.key.value),
+      decodeScalar(proto.key),
       valueAsScalar,
       rootHash,
       proto.path
-        .map((node) => node.childHashes.map((hash) => decodeScalar(hash.value)))
+        .map((node) => node.childHashes.map((hash) => decodeScalar(hash)))
         .flat(),
     );
   }
@@ -220,12 +222,12 @@ export class Libernet {
     accountProto: AccountInfoProto,
   ): Promise<AccountInfo> {
     const lastNonce = decodeLong(accountProto.lastNonce);
-    const balance = decodeBigInt(accountProto.balance.value);
-    const stakingBalance = decodeBigInt(accountProto.stakingBalance.value);
+    const balance = decodeBigInt(accountProto.balance);
+    const stakingBalance = decodeBigInt(accountProto.stakingBalance);
     const hash = await poseidonHash([
       "0x" + lastNonce.toString(16),
-      decodeScalar(accountProto.balance.value),
-      decodeScalar(accountProto.stakingBalance.value),
+      decodeScalar(accountProto.balance),
+      decodeScalar(accountProto.stakingBalance),
     ]);
     return new AccountInfo(
       address,
@@ -265,14 +267,26 @@ export class Libernet {
   }
 
   private static async _decodeTransaction(
-    blockDescriptor: BlockDescriptor,
+    blockDescriptor: BlockDescriptor | null,
     transactionProto: TransactionProto,
+    validate: boolean,
   ): Promise<TransactionInfo> {
-    const signerAddress = decodeScalar(transactionProto.signature.signer.value);
+    const signerAddress = decodeScalar(transactionProto.signature.signer);
+    if (validate) {
+      const signer = await createRemoteAccount(
+        decodePointG1(transactionProto.signature.publicKey),
+      );
+      if (signer.address() !== signerAddress) {
+        throw new Error("invalid transaction signature");
+      }
+    }
     const content = unpackAny<TransactionPayloadProto>(
       transactionProto.payload,
     );
     const chainId = parseInt("" + content.chainId, 10);
+    if (validate && chainId !== CHAIN_ID) {
+      throw new Error("invalid chain ID in transaction");
+    }
     const nonce = parseInt("" + content.nonce, 10);
     let payload: TransactionPayload;
     let transactionHash: string;
@@ -282,8 +296,8 @@ export class Libernet {
           if (!content.blockReward) {
             throw new Error("transaction payload missing");
           }
-          const recipient = decodeScalar(content.blockReward.recipient.value);
-          const amount = decodeScalar(content.blockReward.amount.value);
+          const recipient = decodeScalar(content.blockReward.recipient);
+          const amount = decodeScalar(content.blockReward.amount);
           transactionHash = await poseidonHash([
             signerAddress,
             toScalar(chainId),
@@ -291,7 +305,10 @@ export class Libernet {
             recipient,
             amount,
           ]);
-          payload = { recipient, amount };
+          payload = {
+            recipient,
+            amount: decodeBigInt(encodeScalar(amount)),
+          };
         }
         break;
       case "sendCoins":
@@ -299,8 +316,8 @@ export class Libernet {
           if (!content.sendCoins) {
             throw new Error("transaction payload missing");
           }
-          const recipient = decodeScalar(content.sendCoins.recipient.value);
-          const amount = decodeScalar(content.sendCoins.amount.value);
+          const recipient = decodeScalar(content.sendCoins.recipient);
+          const amount = decodeScalar(content.sendCoins.amount);
           transactionHash = await poseidonHash([
             signerAddress,
             toScalar(chainId),
@@ -308,7 +325,10 @@ export class Libernet {
             recipient,
             amount,
           ]);
-          payload = { recipient, amount };
+          payload = {
+            recipient,
+            amount: decodeBigInt(encodeScalar(amount)),
+          };
         }
         break;
       case "createProgram": {
@@ -337,12 +357,17 @@ export class Libernet {
   private static async _processTransactionInclusionProof(
     proofProto: MerkleProofProto,
     transactionHash?: string,
+    validateTransaction = false,
   ): Promise<TransactionInfo> {
     const blockDescriptor = await Libernet._decodeBlockDescriptor(
       proofProto.blockDescriptor,
     );
     const proto = unpackAny<TransactionProto>(proofProto.value);
-    const info = await Libernet._decodeTransaction(blockDescriptor, proto);
+    const info = await Libernet._decodeTransaction(
+      blockDescriptor,
+      proto,
+      validateTransaction,
+    );
     if (transactionHash && info.hash !== transactionHash) {
       throw new Error(
         `bad transaction hash (got ${info.hash}, want ${transactionHash})`,
@@ -376,7 +401,7 @@ export class Libernet {
       this._client.getAccount(
         {
           blockHash: null,
-          accountAddress: { value: encodeScalar(address) },
+          accountAddress: encodeScalar(address),
         },
         (error: unknown, response: GetAccountResponse) => {
           if (error) {
@@ -405,7 +430,7 @@ export class Libernet {
       return;
     }
     const call = this._client.subscribeToAccount({
-      accountAddress: { value: encodeScalar(address) },
+      accountAddress: encodeScalar(address),
       everyBlock: true,
     });
     watcher = new AccountWatcher(
@@ -465,6 +490,7 @@ export class Libernet {
             Libernet._processTransactionInclusionProof(
               response.transactionProof,
               transactionHash,
+              /*validateTransaction=*/ true,
             )
               .then(resolve)
               .catch(reject);
@@ -520,50 +546,63 @@ export class Libernet {
     });
   }
 
-  public async submitTransaction(
-    type: TransactionType,
-    payload: TransactionPayload,
-  ): Promise<void> {
+  private _submitTransactionImpl(
+    payload: TransactionPayloadProto,
+  ): Promise<TransactionInfo> {
     return new Promise((resolve, reject) => {
-      const innerPayload = (() => {
-        switch (type) {
-          case "sendCoins": {
-            const typedPayload = payload as CoinTransferTransactionPayload;
-            return {
-              transaction: "send_coins",
-              send_coins: {
-                recipient: encodeScalar(typedPayload.recipient),
-                amount: encodeScalar(typedPayload.amount),
-              },
-            };
-          }
-          case "createProgram":
-            // TODO
-            throw new Error(
-              "createProgram transactions are not implemented yet",
-            );
-          default:
-            throw new Error(
-              `invalid transaction type: ${JSON.stringify(type)}`,
-            );
-        }
-      })();
+      const { any, bytes } = encodeMessageCanonical(
+        payload,
+        "libernet.Transaction.Payload",
+      );
+      const signature = this.account.bls_sign(bytes);
+      const proto: TransactionProto = {
+        payload: any,
+        signature: {
+          signer: encodeScalar(this.account.address()),
+          publicKey: encodePointG1(this.account.public_key()),
+          signature: encodePointG2(signature),
+        },
+      };
       this._client.broadcastTransaction(
         {
-          transaction: {
-            payload: packAny(innerPayload, "libernet.Transaction.Payload"),
-            // TODO: signature
-          },
+          transaction: proto,
           ttl: 2,
         },
         (error: unknown) => {
           if (error) {
             reject(error);
           } else {
-            resolve();
+            resolve(Libernet._decodeTransaction(null, proto, false));
           }
         },
       );
+    });
+  }
+
+  public async submitTransaction(
+    type: TransactionType,
+    payload: TransactionPayload,
+    nonceOverride?: number,
+  ): Promise<TransactionInfo> {
+    if (type !== "sendCoins") {
+      throw new Error("unsupported transaction type");
+    }
+    const typedPayload = payload as CoinTransferTransactionPayload;
+    let nonce: number;
+    if (nonceOverride) {
+      nonce = nonceOverride;
+    } else {
+      const { lastNonce } = await this.getOwnAccountInfo();
+      nonce = lastNonce + 1;
+    }
+    return this._submitTransactionImpl({
+      chainId: CHAIN_ID,
+      nonce,
+      transaction: "sendCoins",
+      sendCoins: {
+        recipient: encodeScalar(typedPayload.recipient),
+        amount: encodeBigInt(typedPayload.amount),
+      },
     });
   }
 

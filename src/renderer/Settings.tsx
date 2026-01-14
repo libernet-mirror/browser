@@ -41,6 +41,9 @@ const HomePageField = () => {
               return "invalid";
           }
         })()}
+        spellCheck={false}
+        autoCorrect="off"
+        autoCapitalize="off"
         onFocus={() => {
           setValidation(null);
           setPreviousValue(homePage);

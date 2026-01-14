@@ -3,16 +3,22 @@ import { useState } from "react";
 import { CopyIcon } from "../icons/Copy";
 import { Tooltip, TooltipContainer } from "./Tooltip";
 
-export const AccountAddress = ({ address }: { address: string }) => {
+export const Scalar = ({
+  value,
+  maxLength = 0,
+}: {
+  value: string;
+  maxLength?: number;
+}) => {
   const [copied, setCopied] = useState(false);
   return (
     <kbd className="whitespace-nowrap">
-      {address}{" "}
+      {maxLength ? <>{value.slice(0, maxLength)}&hellip;</> : value}{" "}
       <TooltipContainer>
         <button
           className="m-0 cursor-pointer border-none bg-none p-0"
           onClick={async () => {
-            await navigator.clipboard.writeText(address);
+            await navigator.clipboard.writeText(value);
             setCopied(true);
           }}
           onMouseLeave={() => setCopied(false)}
