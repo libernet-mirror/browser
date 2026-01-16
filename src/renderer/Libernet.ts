@@ -42,7 +42,7 @@ export interface LibernetAPI {
   submitTransaction(
     type: TransactionType,
     payload: TransactionPayload,
-  ): Promise<void>;
+  ): Promise<TransactionInfo>;
 }
 
 export function libernet(): LibernetAPI {

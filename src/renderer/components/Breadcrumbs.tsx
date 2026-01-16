@@ -16,17 +16,18 @@ export const Breadcrumbs = ({
 export const BreadcrumbItem = ({
   children,
   home = false,
+  active = false,
   onClick = null,
 }: PropsWithChildren & {
   home?: boolean;
+  active?: boolean;
   onClick?: () => void;
 }) => (
   <li
     className={clsx(
       "inline-flex items-center text-sm font-medium",
-      onClick
-        ? "cursor-pointer text-neutral-600 hover:text-blue-800"
-        : "cursor-default text-neutral-800",
+      active ? "text-neutral-800" : "text-neutral-600",
+      onClick ? "cursor-pointer hover:text-blue-800" : "cursor-default",
     )}
     onClick={() => onClick?.()}
   >

@@ -7,6 +7,9 @@ import protobuf from "protobufjs";
 
 import type { Any as AnyProto } from "./proto/google/protobuf/Any";
 import type { Timestamp as TimestampProto } from "./proto/google/protobuf/Timestamp";
+import type { PointG1 } from "./proto/libernet/PointG1";
+import type { PointG2 } from "./proto/libernet/PointG2";
+import type { Scalar } from "./proto/libernet/Scalar";
 
 export function derToPem(der: Buffer, label: string): string {
   const base64 = der.toString("base64");
@@ -74,7 +77,71 @@ export function toScalar(n: number): string {
   return "0x" + n.toString(16).toLowerCase().padStart(64, "0");
 }
 
-export function decodeScalar(buffer: string | Buffer | Uint8Array): string {
+function decodePoint(
+  point: { compressedBytes?: string | Buffer | Uint8Array },
+  length: number,
+): string {
+  const buffer = point.compressedBytes;
+  if (!buffer) {
+    throw new Error("invalid point");
+  }
+  if (typeof buffer === "string") {
+    throw new Error("unsupported format");
+  }
+  const bytes = Array.from(buffer);
+  if (bytes.length !== length) {
+    throw new Error("invalid point format");
+  }
+  return (
+    "0x" +
+    bytes
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("")
+      .toLowerCase()
+  );
+}
+
+function encodePoint(
+  hex: string,
+  length: number,
+): { compressedBytes: Uint8Array } {
+  const match = /^0[Xx]([0-9A-Fa-f]+)$/.exec(hex);
+  if (!match) {
+    throw new Error(`invalid hex format: "${hex}"`);
+  }
+  const digits = match[1];
+  if (digits.length !== length * 2) {
+    throw new Error(`invalid point: "${hex}"`);
+  }
+  const bytes = new Uint8Array(length);
+  for (let i = 0; i < length; i++) {
+    const chars = digits.substring(i * 2, (i + 1) * 2);
+    bytes[i] = parseInt(chars, 16);
+  }
+  return { compressedBytes: bytes };
+}
+
+export function decodePointG1(point: PointG1): string {
+  return decodePoint(point, 48);
+}
+
+export function encodePointG1(hex: string): PointG1 {
+  return encodePoint(hex, 48);
+}
+
+export function decodePointG2(point: PointG2): string {
+  return decodePoint(point, 96);
+}
+
+export function encodePointG2(hex: string): PointG2 {
+  return encodePoint(hex, 96);
+}
+
+export function decodeScalar(scalar: Scalar): string {
+  const buffer = scalar.value;
+  if (!buffer) {
+    throw new Error("invalid scalar format");
+  }
   if (typeof buffer === "string") {
     throw new Error("unsupported format");
   }
@@ -94,40 +161,45 @@ export function decodeScalar(buffer: string | Buffer | Uint8Array): string {
   );
 }
 
-export function encodeScalar(hex: string): number[] {
-  const match = /^0[Xx]([0-9A-Fa-f]{1,64})$/.exec(hex);
+export function encodeScalar(hex: string): Scalar {
+  const match = /^0[Xx]([0-9A-Fa-f]+)$/.exec(hex);
   if (!match) {
-    throw new Error(`invalid format for hash "${hex}"`);
+    throw new Error(`invalid hex format: "${hex}"`);
   }
-  const body = match[1].padStart(64, "0");
-  const bytes = [];
+  const digits = match[1];
+  if (digits.length > 64) {
+    throw new Error(`too many digits: "${hex}"`);
+  }
+  const body = digits.padStart(64, "0");
+  const bytes = new Uint8Array(32);
   for (let i = 0; i < 32; i++) {
     const chars = body.substring((31 - i) * 2, (32 - i) * 2);
-    bytes.push(parseInt(chars, 16));
+    bytes[i] = parseInt(chars, 16);
   }
-  return bytes;
+  return { value: bytes };
 }
 
-export function decodeBigInt(buffer: string | Buffer | Uint8Array): bigint {
+export function decodeBigInt(scalar: Scalar): bigint {
+  const buffer = scalar.value;
   if (typeof buffer === "string") {
     throw new Error("unsupported format");
   }
   return Array.from(buffer).reduceRight((a, b) => a * 256n + BigInt(b), 0n);
 }
 
-export function encodeBigInt(value: bigint): number[] {
+export function encodeBigInt(value: bigint): Scalar {
   if (value < 0n) {
     throw new Error("underflow");
   }
-  const bytes: number[] = [];
+  const bytes = new Uint8Array(32);
   for (let i = 0; i < 32; i++) {
-    bytes.push(Number(value % 256n));
+    bytes[i] = Number(value % 256n);
     value /= 256n;
   }
   if (value != 0n) {
     throw new Error("overflow");
   }
-  return bytes;
+  return { value: bytes };
 }
 
 export function decodeTimestamp(proto: TimestampProto): Date {
@@ -192,4 +264,46 @@ export function unpackAny<T>(any: AnyProto): T {
   const messageType = getMessageType(typeName);
   const bytes = normalizeBytes(value);
   return messageType.decode(bytes) as unknown as T;
+}
+
+function encodeVarInt(buffer: number[], value: number): void {
+  while (value > 0x7f) {
+    buffer.push(0x80 | (value & 0x7f));
+    value >>>= 7;
+  }
+  buffer.push(value & 0x7f);
+}
+
+export function encodeAnyCanonical(any: AnyProto): Uint8Array {
+  const { type_url, value } = any as {
+    type_url: string;
+    value: Buffer | Uint8Array | string;
+  };
+  const typeUrlBytes = Buffer.from(type_url, "utf8");
+  const valueBytes = normalizeBytes(value);
+
+  const bytes: number[] = [];
+
+  bytes.push(10);
+  encodeVarInt(bytes, typeUrlBytes.length);
+  for (const b of typeUrlBytes) {
+    bytes.push(b);
+  }
+
+  bytes.push(18);
+  encodeVarInt(bytes, valueBytes.length);
+  for (const b of valueBytes) {
+    bytes.push(b);
+  }
+
+  return new Uint8Array(bytes);
+}
+
+export function encodeMessageCanonical<T>(
+  message: T,
+  typeName: string,
+): { any: AnyProto; bytes: Uint8Array } {
+  const any = packAny<T>(message, typeName);
+  const bytes = encodeAnyCanonical(any);
+  return { any, bytes };
 }
