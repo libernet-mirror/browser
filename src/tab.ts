@@ -6,9 +6,11 @@ import {
   URL_PREFIX_PATTERN,
   WEBPACK_ENTRY,
 } from "./constants";
+import { AccountListener, offAccountProof, onAccountProof } from "./libernet";
 
 export class Tab {
   private _view: WebContentsView | null = null;
+  private _accountListener: AccountListener | null = null;
 
   // REQUIRES: `url` must be valid and must include the protocol part.
   private static _mapSystemUrlToUserUrl(url: string): string {
@@ -51,6 +53,23 @@ export class Tab {
   private _notifyUrl(url: string): void {
     this._url = Tab._mapSystemUrlToUserUrl(url);
     this._onUrl(this._url);
+  }
+
+  private _installAccountListenerFor(view: WebContentsView): void {
+    if (this._accountListener) {
+      offAccountProof(this._accountListener);
+    }
+    this._accountListener = (proof) => {
+      view.webContents.send("net/watch-account", proof);
+    };
+    onAccountProof(this._accountListener);
+  }
+
+  private _removeAccountListener(): void {
+    if (this._accountListener) {
+      offAccountProof(this._accountListener);
+      this._accountListener = null;
+    }
   }
 
   private _configureView(view: WebContentsView): void {
@@ -121,8 +140,11 @@ export class Tab {
       case "https":
       case "file":
         return this._createWebView();
-      case "liber":
-        return this._createSystemView();
+      case "liber": {
+        const view = this._createSystemView();
+        this._installAccountListenerFor(view);
+        return view;
+      }
       default:
         throw new Error(`unknown protocol ${JSON.stringify(protocol)}`);
     }
@@ -149,6 +171,7 @@ export class Tab {
 
   public setUrl(url: string): void {
     if (this._view) {
+      this._removeAccountListener();
       this._parentWindow.contentView.removeChildView(this._view);
       this._view.webContents?.close();
     }
