@@ -1,17 +1,30 @@
-import { BaseWindow, ipcMain } from "electron";
+import { BaseWindow, BaseWindowConstructorOptions, ipcMain } from "electron";
 
+import {
+  getHomeAddress,
+  getWindowPosition,
+  getWindowSize,
+  isWindowMaximized,
+  saveWindowMaximized,
+  saveWindowPosition,
+  saveWindowSize,
+} from "./config";
 import {
   DEFAULT_SEARCH_ENGINE,
   DNS_HEURISTIC_PREFIX_PATTERN,
+  SYSTEM_URL_SETTINGS,
+  SYSTEM_URL_WALLET,
   URL_PROTOCOL_PATTERN,
 } from "./constants";
 import { ControlBar } from "./controls";
-import { Tab } from "./tabs";
+import { Tab } from "./tab";
 
 export interface BrowserWindowSettings {
-  maximized: boolean;
+  x: number | null;
+  y: number | null;
   width: number;
   height: number;
+  maximized: boolean;
 }
 
 export class BrowserWindow {
@@ -20,18 +33,25 @@ export class BrowserWindow {
   private readonly _tabs: Tab[] = [];
   private _currentTab: Tab;
 
-  public constructor(tabUrls: string[], settings: BrowserWindowSettings) {
+  private constructor(tabUrls: string[], settings: BrowserWindowSettings) {
     if (tabUrls.length < 1) {
       throw new Error("at least one tab URL must be specified");
     }
 
-    this._window = new BaseWindow({
+    const options: BaseWindowConstructorOptions = {
       title: "Libernet",
       width: settings.width,
       height: settings.height,
       show: false,
       frame: false,
-    });
+    };
+    if (settings.x !== null) {
+      options.x = settings.x;
+    }
+    if (settings.y !== null) {
+      options.y = settings.y;
+    }
+    this._window = new BaseWindow(options);
     this._window.removeMenu();
     if (settings.maximized) {
       this._window.maximize();
@@ -59,24 +79,39 @@ export class BrowserWindow {
         this._controlBar.resize();
         this._currentTab.resize();
       })
-      .on("resized", () => {
-        // TODO: save settings.
+      .on("moved", async () => {
+        const { x, y } = this._window.getBounds();
+        await saveWindowPosition(x, y);
       })
-      .on("maximize", () => {
-        // TODO: save settings.
+      .on("resized", async () => {
+        const { width, height } = this._window.getBounds();
+        await saveWindowSize(width, height);
       })
-      .on("unmaximize", () => {
-        // TODO: save settings.
-      });
+      .on("maximize", () => saveWindowMaximized(true))
+      .on("unmaximize", () => saveWindowMaximized(false));
 
     ipcMain.handle("root/get-view", async ({ sender }) => {
       if (this._controlBar.matches(sender)) {
         return "control";
       }
       if (this._currentTab.matches(sender)) {
-        return "web";
+        const url = this._currentTab.getUrl();
+        const [, protocol] = url.match(URL_PROTOCOL_PATTERN);
+        switch (protocol) {
+          case "http":
+          case "https":
+          case "file":
+            return "web";
+        }
+        switch (url) {
+          case SYSTEM_URL_WALLET:
+            return "wallet";
+          case SYSTEM_URL_SETTINGS:
+            return "settings";
+        }
       }
-      throw new Error();
+      // TODO: check other tabs.
+      throw new Error("invalid request");
     });
 
     ipcMain.handle("window/minimize", () => this._window.minimize());
@@ -100,6 +135,17 @@ export class BrowserWindow {
     ipcMain.handle("root/cancel-navigation", () =>
       this._currentTab.stopLoading(),
     );
+  }
+
+  public static async create(): Promise<BrowserWindow> {
+    const [maximized, { x, y }, { width, height }, homeAddress] =
+      await Promise.all([
+        isWindowMaximized(),
+        getWindowPosition(),
+        getWindowSize(),
+        getHomeAddress(),
+      ]);
+    return new BrowserWindow([homeAddress], { x, y, width, height, maximized });
   }
 
   private _setCurrentTab(tab: Tab): void {
