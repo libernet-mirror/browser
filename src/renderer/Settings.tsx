@@ -208,7 +208,9 @@ export const Page = () => {
         </NavItem>
       </Navbar>
       <Card className="m-3 grow">
-        <Settings view={view} />
+        <div className="mx-auto max-w-xl">
+          <Settings view={view} />
+        </div>
       </Card>
     </div>
   );

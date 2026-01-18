@@ -12,8 +12,8 @@ export const Scalar = ({
 }) => {
   const [copied, setCopied] = useState(false);
   return (
-    <kbd className="whitespace-nowrap">
-      {maxLength ? <>{value.slice(0, maxLength)}&hellip;</> : value}{" "}
+    <span className="whitespace-nowrap">
+      <kbd>{maxLength ? <>{value.slice(0, maxLength)}&hellip;</> : value}</kbd>{" "}
       <TooltipContainer>
         <button
           className="m-0 cursor-pointer border-none bg-none p-0"
@@ -29,6 +29,6 @@ export const Scalar = ({
           {copied ? "Copied!" : "Copy to clipboard"}
         </Tooltip>
       </TooltipContainer>
-    </kbd>
+    </span>
   );
 };
