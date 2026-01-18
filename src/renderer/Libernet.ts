@@ -6,19 +6,15 @@ import {
   type TransactionType,
 } from "../data";
 
-export type ContentView = "control" | "web" | "settings" | "wallet";
-
 export interface LibernetAPI {
   getHomePage(): Promise<string>;
   setHomePage(homePage: string): Promise<string>;
   minimizeWindow(): Promise<void>;
   maximizeWindow(): Promise<void>;
   closeWindow(): Promise<void>;
-  getView(): Promise<ContentView>;
   getUrl(): Promise<string>;
   setUrl(url: string): Promise<void>;
   onUrl(listener: (url: string) => void): () => void;
-  onViewChange(listener: (view: ContentView) => void): () => void;
   onStartNavigation(listener: () => void): () => void;
   onFinishNavigation(listener: () => void): () => void;
   navigateBack(): Promise<void>;

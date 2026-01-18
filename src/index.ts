@@ -26,7 +26,6 @@ import {
   SYSTEM_URL_SETTINGS,
   SYSTEM_URL_WALLET,
   URL_PREFIX_PATTERN,
-  URL_PROTOCOL_PATTERN,
 } from "./constants";
 import {
   type AccountListener,
@@ -130,7 +129,8 @@ const createWindow = async () => {
 
   const setWebView = async (url: string) => {
     console.log(`setWebView(${JSON.stringify(url)})`);
-    if (!URL_PROTOCOL_PATTERN.test(url)) {
+    const match = url.match(URL_PREFIX_PATTERN);
+    if (!match) {
       if (DNS_HEURISTIC_PREFIX_PATTERN.test(url)) {
         url = "http://" + url;
       } else {
@@ -138,7 +138,7 @@ const createWindow = async () => {
       }
     }
     {
-      const [, protocol] = url.match(URL_PROTOCOL_PATTERN);
+      const protocol = match[1];
       if (protocol !== "http" && protocol !== "https") {
         throw new Error(`invalid protocol "${protocol}"`);
       }

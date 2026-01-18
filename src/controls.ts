@@ -21,7 +21,7 @@ export class ControlBar {
     const { width } = this._parentWindow.getBounds();
     this._view.setBounds({ x: 0, y: 0, width, height: CONTROL_BAR_HEIGHT });
     this._parentWindow.contentView.addChildView(this._view);
-    this._view.webContents.loadURL(WEBPACK_ENTRY);
+    this._view.webContents.loadURL(WEBPACK_ENTRY + "?route=control");
   }
 
   public bringForward(): void {

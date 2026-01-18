@@ -23,7 +23,6 @@ function makeEventHandler<Listener extends (...args: never[]) => void>(
 
 type NavigationListener = () => void;
 type UrlListener = (url: string) => void;
-type ViewListener = (view: string) => void;
 type AccountListener = (account: AccountInfo) => void;
 
 contextBridge.exposeInMainWorld("libernet", {
@@ -33,11 +32,9 @@ contextBridge.exposeInMainWorld("libernet", {
   minimizeWindow: () => ipcRenderer.invoke("window/minimize"),
   maximizeWindow: () => ipcRenderer.invoke("window/maximize"),
   closeWindow: () => ipcRenderer.invoke("window/close"),
-  getView: () => ipcRenderer.invoke("root/get-view"),
   getUrl: () => ipcRenderer.invoke("root/get-url"),
   setUrl: (url: string) => ipcRenderer.invoke("root/set-url", url),
   onUrl: makeEventHandler<UrlListener>("root/url"),
-  onViewChange: makeEventHandler<ViewListener>("root/view-change"),
   onStartNavigation: makeEventHandler<NavigationListener>(
     "root/start-navigation",
   ),

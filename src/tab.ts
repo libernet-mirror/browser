@@ -3,12 +3,42 @@ import { BaseWindow, WebContents, WebContentsView } from "electron";
 import {
   CONTROL_BAR_HEIGHT,
   PRELOAD_WEBPACK_ENTRY,
-  URL_PROTOCOL_PATTERN,
+  URL_PREFIX_PATTERN,
   WEBPACK_ENTRY,
 } from "./constants";
 
 export class Tab {
   private _view: WebContentsView | null = null;
+
+  // REQUIRES: `url` must be valid and must include the protocol part.
+  private static _mapSystemUrlToUserUrl(url: string): string {
+    if (!url.startsWith(WEBPACK_ENTRY)) {
+      return url;
+    }
+    const params = url
+      .slice(WEBPACK_ENTRY.length)
+      .replace(/^\?/, "")
+      .replace(/#.*$/, "")
+      .split("&")
+      .map((entry) => entry.split("="))
+      .filter(([key]) => key === "route")
+      .map(([, value]) => decodeURIComponent(value));
+    if (params.length > 0) {
+      return `liber://${params[0]}`;
+    } else {
+      // This should never happen.
+      return "liber:///";
+    }
+  }
+
+  // REQUIRES: `url` must be valid and must include the protocol part.
+  private static _mapUserUrlToSystemUrl(url: string): string {
+    const [, protocol, address] = url.match(URL_PREFIX_PATTERN);
+    if (protocol !== "liber") {
+      return url;
+    }
+    return `${WEBPACK_ENTRY}?route=${encodeURIComponent(address)}`;
+  }
 
   public constructor(
     private readonly _parentWindow: BaseWindow,
@@ -16,29 +46,26 @@ export class Tab {
     private readonly _onUrl: (url: string) => void,
     private readonly _onStartNavigation: () => void,
     private readonly _onFinishNavigation: () => void,
-  ) {
-    const [, protocol] = this._url.match(URL_PROTOCOL_PATTERN);
-    if (protocol !== "http" && protocol !== "https") {
-      throw new Error(`invalid protocol "${protocol}"`);
-    }
+  ) {}
+
+  private _notifyUrl(url: string): void {
+    this._url = Tab._mapSystemUrlToUserUrl(url);
+    this._onUrl(this._url);
   }
 
   private _configureView(view: WebContentsView): void {
     view.webContents
       .on("will-navigate", ({ url, isMainFrame }) => {
         if (isMainFrame) {
-          this._url = url;
-          this._onUrl(url);
+          this._notifyUrl(url);
         }
       })
       .on("did-navigate", (_, url) => {
-        this._url = url;
-        this._onUrl(url);
+        this._notifyUrl(url);
       })
       .on("did-navigate-in-page", (_, url, isMainFrame) => {
         if (isMainFrame) {
-          this._url = url;
-          this._onUrl(url);
+          this._notifyUrl(url);
         }
       })
       .on("did-start-loading", () => {
@@ -65,7 +92,7 @@ export class Tab {
       },
     });
     this._configureView(view);
-    view.webContents.loadURL(this._url);
+    view.webContents.loadURL(Tab._mapUserUrlToSystemUrl(this._url));
     return view;
   }
 
@@ -79,12 +106,12 @@ export class Tab {
       },
     });
     this._configureView(view);
-    view.webContents.loadURL(WEBPACK_ENTRY);
+    view.webContents.loadURL(Tab._mapUserUrlToSystemUrl(this._url));
     return view;
   }
 
   private _createView(): WebContentsView {
-    const match = this._url.match(URL_PROTOCOL_PATTERN);
+    const match = this._url.match(URL_PREFIX_PATTERN);
     if (!match) {
       throw new Error(`invalid URL: ${JSON.stringify(this._url)}`);
     }

@@ -16,10 +16,8 @@ export const SYSTEM_URL_WALLET = "liber://wallet";
 
 export const DEFAULT_SEARCH_ENGINE = "https://www.google.com/search?q=$QUERY$";
 
-export const URL_PROTOCOL_PATTERN =
-  /^([a-z]+):\/\/[_a-z0-9-]+(?:\.[_a-z0-9-]+)*(?:\/|$)/i;
 export const URL_PREFIX_PATTERN =
-  /^https?:\/\/[_a-z0-9-]+(?:\.[_a-z0-9-]+)*(?:\/|$)/i;
+  /^([a-z]+):\/\/(([_a-z0-9-]+(?:\.[_a-z0-9-]+)*)(?::([0-9]+))?\/?)$/i;
 export const DNS_NAME_PATTERN = /^[_a-z0-9-]+(?:\.[_a-z0-9-]+)*$/i;
 export const DNS_PREFIX_PATTERN = /^[_a-z0-9-]+(?:\.[_a-z0-9-]+)*(?:\/|$)/i;
 export const DNS_HEURISTIC_PREFIX_PATTERN =

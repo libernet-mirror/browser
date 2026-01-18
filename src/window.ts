@@ -12,9 +12,7 @@ import {
 import {
   DEFAULT_SEARCH_ENGINE,
   DNS_HEURISTIC_PREFIX_PATTERN,
-  SYSTEM_URL_SETTINGS,
-  SYSTEM_URL_WALLET,
-  URL_PROTOCOL_PATTERN,
+  URL_PREFIX_PATTERN,
 } from "./constants";
 import { ControlBar } from "./controls";
 import { Tab } from "./tab";
@@ -90,30 +88,6 @@ export class BrowserWindow {
       .on("maximize", () => saveWindowMaximized(true))
       .on("unmaximize", () => saveWindowMaximized(false));
 
-    ipcMain.handle("root/get-view", async ({ sender }) => {
-      if (this._controlBar.matches(sender)) {
-        return "control";
-      }
-      if (this._currentTab.matches(sender)) {
-        const url = this._currentTab.getUrl();
-        const [, protocol] = url.match(URL_PROTOCOL_PATTERN);
-        switch (protocol) {
-          case "http":
-          case "https":
-          case "file":
-            return "web";
-        }
-        switch (url) {
-          case SYSTEM_URL_WALLET:
-            return "wallet";
-          case SYSTEM_URL_SETTINGS:
-            return "settings";
-        }
-      }
-      // TODO: check other tabs.
-      throw new Error("invalid request");
-    });
-
     ipcMain.handle("window/minimize", () => this._window.minimize());
 
     ipcMain.handle("window/maximize", () => {
@@ -156,7 +130,7 @@ export class BrowserWindow {
   }
 
   private _setUrl(url: string): void {
-    if (!URL_PROTOCOL_PATTERN.test(url)) {
+    if (!URL_PREFIX_PATTERN.test(url)) {
       if (DNS_HEURISTIC_PREFIX_PATTERN.test(url)) {
         url = "http://" + url;
       } else {
