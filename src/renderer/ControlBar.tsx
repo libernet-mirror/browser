@@ -14,11 +14,7 @@ import { libernet } from "./Libernet";
 import { useAsyncEffect } from "./Utilities";
 
 const Tabs = () => (
-  <div
-    className="w-full bg-blue-100 p-1 text-end"
-    onDoubleClick={() => libernet().maximizeWindow()}
-  >
-    <span />
+  <div className="window-drag-area w-full bg-blue-100 p-1 text-right">
     <PlainButton round style="blue" onClick={() => libernet().minimizeWindow()}>
       <MinimizeIcon className="size-4" />
     </PlainButton>
