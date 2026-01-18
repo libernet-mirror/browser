@@ -72,14 +72,14 @@ const Navigation = () => {
       <PlainButton
         round
         disabled={isSystemPage}
-        onClick={async () => setUrl(await libernet().navigateBack())}
+        onClick={() => libernet().navigateBack()}
       >
         <LeftIcon className="size-5" />
       </PlainButton>
       <PlainButton
         round
         disabled={isSystemPage}
-        onClick={async () => setUrl(await libernet().navigateForward())}
+        onClick={() => libernet().navigateForward()}
       >
         <RightIcon className="size-5" />
       </PlainButton>

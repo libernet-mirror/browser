@@ -21,8 +21,8 @@ export interface LibernetAPI {
   onViewChange(listener: (view: ContentView) => void): () => void;
   onStartNavigation(listener: () => void): () => void;
   onFinishNavigation(listener: () => void): () => void;
-  navigateBack(): Promise<string>;
-  navigateForward(): Promise<string>;
+  navigateBack(): Promise<void>;
+  navigateForward(): Promise<void>;
   startRefresh(): void;
   cancelNavigation(): void;
   getNodeList(): Promise<string[]>;
