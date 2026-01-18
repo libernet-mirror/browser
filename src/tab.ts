@@ -216,6 +216,7 @@ export class Tab {
   }
 
   public free(): void {
+    this._view?.removeAllListeners();
     this._view?.webContents?.close();
   }
 }
