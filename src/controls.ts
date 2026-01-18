@@ -6,24 +6,10 @@ import {
   WEBPACK_ENTRY,
 } from "./constants";
 
-export type NavigationButton =
-  | "back"
-  | "forward"
-  | "refresh"
-  | "cancel"
-  | "minimize"
-  | "maximize"
-  | "close";
-
 export class ControlBar {
   private readonly _view: WebContentsView;
 
-  public constructor(
-    private readonly _parentWindow: BaseWindow,
-    private readonly _url: string,
-    private readonly _onUrl: (url: string) => void,
-    private readonly _onClick: (button: NavigationButton) => void,
-  ) {
+  public constructor(private readonly _parentWindow: BaseWindow) {
     this._view = new WebContentsView({
       webPreferences: {
         contextIsolation: true,
@@ -52,14 +38,14 @@ export class ControlBar {
   }
 
   public setUrl(url: string): void {
-    // TODO: update the URL in the address bar.
+    this._view.webContents.send("root/url", url);
   }
 
   public onStartNavigation(): void {
-    // TODO: set the spinner.
+    this._view.webContents.send("root/start-navigation");
   }
 
   public onFinishNavigation(): void {
-    // TODO: reset the spinner.
+    this._view.webContents.send("root/finish-navigation");
   }
 }

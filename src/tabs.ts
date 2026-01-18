@@ -1,22 +1,13 @@
 import { BaseWindow, WebContents, WebContentsView } from "electron";
 
-import { CONTROL_BAR_HEIGHT, URL_PROTOCOL_PATTERN } from "./constants";
+import {
+  CONTROL_BAR_HEIGHT,
+  PRELOAD_WEBPACK_ENTRY,
+  URL_PROTOCOL_PATTERN,
+  WEBPACK_ENTRY,
+} from "./constants";
 
-export interface Tab {
-  getUrl(): string;
-  setUrl(url: string): void;
-  addTo(window: BaseWindow): void;
-  removeFrom(window: BaseWindow): void;
-  matches(sender: WebContents): boolean;
-  resize(): void;
-  goBack(): void;
-  goForward(): void;
-  reload(): void;
-  stopLoading(): void;
-  free(): void;
-}
-
-export class WebTab implements Tab {
+export class Tab {
   private _view: WebContentsView | null = null;
 
   public constructor(
@@ -32,14 +23,7 @@ export class WebTab implements Tab {
     }
   }
 
-  private _createView(): WebContentsView {
-    console.log(`setWebView(${JSON.stringify(this._url)})`);
-    const view = new WebContentsView({
-      webPreferences: {
-        contextIsolation: true,
-        devTools: true,
-      },
-    });
+  private _configureView(view: WebContentsView): void {
     view.webContents
       .on("will-navigate", ({ url, isMainFrame }) => {
         if (isMainFrame) {
@@ -70,8 +54,51 @@ export class WebTab implements Tab {
       width,
       height: height - CONTROL_BAR_HEIGHT,
     });
+  }
+
+  private _createWebView(): WebContentsView {
+    console.log(`setWebView(${JSON.stringify(this._url)})`);
+    const view = new WebContentsView({
+      webPreferences: {
+        contextIsolation: true,
+        devTools: true,
+      },
+    });
+    this._configureView(view);
     view.webContents.loadURL(this._url);
     return view;
+  }
+
+  private _createSystemView(): WebContentsView {
+    console.log(`setSystemView(${JSON.stringify(this._url)})`);
+    const view = new WebContentsView({
+      webPreferences: {
+        contextIsolation: true,
+        devTools: false,
+        preload: PRELOAD_WEBPACK_ENTRY,
+      },
+    });
+    this._configureView(view);
+    view.webContents.loadURL(WEBPACK_ENTRY);
+    return view;
+  }
+
+  private _createView(): WebContentsView {
+    const match = this._url.match(URL_PROTOCOL_PATTERN);
+    if (!match) {
+      throw new Error(`invalid URL: ${JSON.stringify(this._url)}`);
+    }
+    const protocol = match[1];
+    switch (protocol) {
+      case "http":
+      case "https":
+      case "file":
+        return this._createWebView();
+      case "liber":
+        return this._createSystemView();
+      default:
+        throw new Error(`unknown protocol ${JSON.stringify(protocol)}`);
+    }
   }
 
   private _getView(resize = false): WebContentsView {
@@ -96,21 +123,21 @@ export class WebTab implements Tab {
   public setUrl(url: string): void {
     if (this._view) {
       this._parentWindow.contentView.removeChildView(this._view);
-      this._view.webContents.close();
+      this._view.webContents?.close();
     }
     this._url = url;
     this._view = this._createView();
     this._parentWindow.contentView.addChildView(this._view);
   }
 
-  public addTo(window: BaseWindow): void {
+  public show(): void {
     const view = this._getView(/*resize=*/ true);
-    window.contentView.addChildView(view);
+    this._parentWindow.contentView.addChildView(view);
   }
 
-  public removeFrom(window: BaseWindow): void {
+  public hide(): void {
     if (this._view) {
-      window.contentView.removeChildView(this._view);
+      this._parentWindow.contentView.removeChildView(this._view);
     }
   }
 
@@ -123,15 +150,15 @@ export class WebTab implements Tab {
   }
 
   public goBack(): void {
-    this._getView().webContents.navigationHistory.goBack();
+    this._getView().webContents?.navigationHistory.goBack();
   }
 
   public goForward(): void {
-    this._getView().webContents.navigationHistory.goForward();
+    this._getView().webContents?.navigationHistory.goForward();
   }
 
   public reload(): void {
-    this._getView().webContents.reload();
+    this._getView().webContents?.reload();
   }
 
   public stopLoading(): void {

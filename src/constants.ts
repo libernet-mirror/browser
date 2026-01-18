@@ -9,7 +9,7 @@ export const PRELOAD_WEBPACK_ENTRY = MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY;
 
 export const INITIAL_WIDTH = 800;
 export const INITIAL_HEIGHT = 600;
-export const CONTROL_BAR_HEIGHT = 45;
+export const CONTROL_BAR_HEIGHT = 85;
 
 export const SYSTEM_URL_SETTINGS = "liber://settings";
 export const SYSTEM_URL_WALLET = "liber://wallet";

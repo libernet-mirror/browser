@@ -4,6 +4,8 @@ import { PlainButton } from "./components/Buttons";
 import { CancelIcon } from "./icons/Cancel";
 import { DotsIcon } from "./icons/Dots";
 import { LeftIcon } from "./icons/Left";
+import { MaximizeIcon } from "./icons/Maximize";
+import { MinimizeIcon } from "./icons/Minimize";
 import { RefreshIcon } from "./icons/Refresh";
 import { RightIcon } from "./icons/Right";
 import { WalletIcon } from "./icons/Wallet";
@@ -11,7 +13,25 @@ import { WalletIcon } from "./icons/Wallet";
 import { libernet } from "./Libernet";
 import { useAsyncEffect } from "./Utilities";
 
-export const ControlBar = () => {
+const Tabs = () => (
+  <div
+    className="w-full bg-blue-100 p-1 text-end"
+    onDoubleClick={() => libernet().maximizeWindow()}
+  >
+    <span />
+    <PlainButton round style="blue" onClick={() => libernet().minimizeWindow()}>
+      <MinimizeIcon className="size-4" />
+    </PlainButton>
+    <PlainButton round style="blue" onClick={() => libernet().maximizeWindow()}>
+      <MaximizeIcon className="size-4" />
+    </PlainButton>
+    <PlainButton round style="blue" onClick={() => libernet().closeWindow()}>
+      <CancelIcon className="size-4" />
+    </PlainButton>
+  </div>
+);
+
+const Navigation = () => {
   const [url, setUrl] = useState("");
   const [typingUrl, setTypingUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -115,3 +135,10 @@ export const ControlBar = () => {
     </div>
   );
 };
+
+export const ControlBar = () => (
+  <>
+    <Tabs />
+    <Navigation />
+  </>
+);

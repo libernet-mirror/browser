@@ -30,6 +30,9 @@ contextBridge.exposeInMainWorld("libernet", {
   getHomePage: () => ipcRenderer.invoke("settings/get-home-page"),
   setHomePage: (homePage: string) =>
     ipcRenderer.invoke("settings/set-home-page", homePage),
+  minimizeWindow: () => ipcRenderer.invoke("window/minimize"),
+  maximizeWindow: () => ipcRenderer.invoke("window/maximize"),
+  closeWindow: () => ipcRenderer.invoke("window/close"),
   getView: () => ipcRenderer.invoke("root/get-view"),
   getUrl: () => ipcRenderer.invoke("root/get-url"),
   setUrl: (url: string) => ipcRenderer.invoke("root/set-url", url),

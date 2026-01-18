@@ -271,7 +271,11 @@ const createWindow = async () => {
 app.on(
   "ready",
   async () =>
-    new BrowserWindow(INITIAL_WIDTH, INITIAL_HEIGHT, await getHomeAddress()),
+    new BrowserWindow([await getHomeAddress()], {
+      maximized: false,
+      width: INITIAL_WIDTH,
+      height: INITIAL_HEIGHT,
+    }),
 );
 
 // Quit when all windows are closed, except on macOS. There, it's common for applications and their
