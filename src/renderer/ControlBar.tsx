@@ -1,17 +1,111 @@
+import { clsx } from "clsx";
 import { useEffect, useMemo, useState } from "react";
+
+import { TabDescriptor } from "../data";
 
 import { PlainButton } from "./components/Buttons";
 import { CancelIcon } from "./icons/Cancel";
 import { DotsIcon } from "./icons/Dots";
 import { LeftIcon } from "./icons/Left";
+import { MaximizeIcon } from "./icons/Maximize";
+import { MinimizeIcon } from "./icons/Minimize";
 import { RefreshIcon } from "./icons/Refresh";
 import { RightIcon } from "./icons/Right";
 import { WalletIcon } from "./icons/Wallet";
 
 import { libernet } from "./Libernet";
 import { useAsyncEffect } from "./Utilities";
+import { PlusIcon } from "./icons/Plus";
 
-export const ControlBar = () => {
+const TabPill = ({
+  title,
+  index,
+  active = false,
+}: {
+  title: string;
+  index: number;
+  active?: boolean;
+}) => (
+  <div
+    className={clsx(
+      "mr-1 flex w-50 flex-row overflow-hidden rounded-md text-sm text-nowrap rtl:flex-row-reverse",
+      active
+        ? "bg-white shadow-sm"
+        : "bg-blue-100 hover:bg-blue-200 active:bg-blue-300",
+    )}
+  >
+    <button
+      className={clsx(
+        "grow overflow-hidden bg-transparent px-2 py-1 text-start overflow-ellipsis",
+      )}
+      disabled={active}
+      onClick={() => libernet().selectTab(index)}
+    >
+      {title}
+    </button>
+    <button
+      className={clsx(
+        "bg-transparent p-1",
+        active
+          ? "hover:bg-neutral-200 active:bg-neutral-300"
+          : "hover:bg-blue-300 active:bg-blue-400",
+      )}
+      onClick={() => libernet().removeTab(index)}
+    >
+      <CancelIcon className="size-3" />
+    </button>
+  </div>
+);
+
+const Tabs = () => {
+  const [tabs, setTabs] = useState<TabDescriptor[]>([]);
+  const [activeTabIndex, setActiveTabIndex] = useState(0);
+  useAsyncEffect(async () => {
+    const destructor = libernet().onTabs(
+      (tabs: TabDescriptor[], activeIndex: number) => {
+        setTabs(tabs);
+        setActiveTabIndex(activeIndex);
+      },
+    );
+    setTabs(await libernet().getTabs());
+    return destructor;
+  }, []);
+  return (
+    <div className="window-drag-area flex w-full overflow-hidden bg-blue-100 p-1 align-middle">
+      {tabs.map(({ title }, index) => (
+        <TabPill
+          key={index}
+          title={title}
+          index={index}
+          active={index === activeTabIndex}
+        />
+      ))}
+      <PlainButton round style="blue" onClick={() => libernet().addTab()}>
+        <PlusIcon className="size-4" />
+      </PlainButton>
+      <span className="window-drag-area grow" />
+      <PlainButton
+        round
+        style="blue"
+        onClick={() => libernet().minimizeWindow()}
+      >
+        <MinimizeIcon className="size-4" />
+      </PlainButton>
+      <PlainButton
+        round
+        style="blue"
+        onClick={() => libernet().maximizeWindow()}
+      >
+        <MaximizeIcon className="size-4" />
+      </PlainButton>
+      <PlainButton round style="blue" onClick={() => libernet().closeWindow()}>
+        <CancelIcon className="size-4" />
+      </PlainButton>
+    </div>
+  );
+};
+
+const Navigation = () => {
   const [url, setUrl] = useState("");
   const [typingUrl, setTypingUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -52,14 +146,14 @@ export const ControlBar = () => {
       <PlainButton
         round
         disabled={isSystemPage}
-        onClick={async () => setUrl(await libernet().navigateBack())}
+        onClick={() => libernet().navigateBack()}
       >
         <LeftIcon className="size-5" />
       </PlainButton>
       <PlainButton
         round
         disabled={isSystemPage}
-        onClick={async () => setUrl(await libernet().navigateForward())}
+        onClick={() => libernet().navigateForward()}
       >
         <RightIcon className="size-5" />
       </PlainButton>
@@ -115,3 +209,10 @@ export const ControlBar = () => {
     </div>
   );
 };
+
+export const ControlBar = () => (
+  <>
+    <Tabs />
+    <Navigation />
+  </>
+);

@@ -1,6 +1,11 @@
 // NOTE: this module is imported by both the main process and the renderer process, so all
 // definitions here must be runnable in both and therefore must not use Node.js stuff.
 
+export interface TabDescriptor {
+  title: string;
+  url: string;
+}
+
 export class BlockDescriptor {
   public constructor(
     public readonly blockHash: string,

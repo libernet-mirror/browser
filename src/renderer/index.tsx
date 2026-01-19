@@ -3,6 +3,6 @@ import { createRoot } from "react-dom/client";
 
 import "./index.css";
 
-import { App } from "./App";
+import { System } from "./System";
 
-createRoot(document.body).render(<App />);
+createRoot(document.body).render(<System />);
