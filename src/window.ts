@@ -169,7 +169,21 @@ export class BrowserWindow {
   }
 
   private _destroyTabAt(index: number): void {
-    // TODO
+    this._tabs.splice(index, 1).forEach((tab) => {
+      tab.hide();
+      tab.free();
+    });
+    if (!this._tabs.length) {
+      this._window.close();
+      return;
+    }
+    this._currentTabIndex = Math.min(
+      this._currentTabIndex,
+      this._tabs.length - 1,
+    );
+    this._getCurrentTab().show();
+    this._controlBar.bringForward();
+    this._updateControlBar();
   }
 
   private _setUrl(url: string): void {

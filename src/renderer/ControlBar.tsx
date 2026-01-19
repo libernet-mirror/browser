@@ -26,18 +26,35 @@ const TabPill = ({
   index: number;
   active?: boolean;
 }) => (
-  <button
+  <div
     className={clsx(
-      "mr-1 w-50 overflow-hidden rounded-md px-2 py-1 text-start text-sm text-nowrap overflow-ellipsis",
+      "mr-1 flex w-50 flex-row overflow-hidden rounded-md text-sm text-nowrap rtl:flex-row-reverse",
       active
         ? "bg-white shadow-sm"
         : "bg-blue-100 hover:bg-blue-200 active:bg-blue-300",
     )}
-    disabled={active}
-    onClick={() => libernet().selectTab(index)}
   >
-    {title}
-  </button>
+    <button
+      className={clsx(
+        "grow overflow-hidden bg-transparent px-2 py-1 text-start overflow-ellipsis",
+      )}
+      disabled={active}
+      onClick={() => libernet().selectTab(index)}
+    >
+      {title}
+    </button>
+    <button
+      className={clsx(
+        "bg-transparent p-1",
+        active
+          ? "hover:bg-neutral-200 active:bg-neutral-300"
+          : "hover:bg-blue-300 active:bg-blue-400",
+      )}
+      onClick={() => libernet().removeTab(index)}
+    >
+      <CancelIcon className="size-3" />
+    </button>
+  </div>
 );
 
 const Tabs = () => {
