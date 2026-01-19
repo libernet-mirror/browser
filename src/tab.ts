@@ -62,7 +62,7 @@ export class Tab {
       offAccountProof(this._accountListener);
     }
     this._accountListener = (proof) => {
-      view.webContents.send("net/watch-account", proof);
+      view.webContents?.send("net/watch-account", proof);
     };
     onAccountProof(this._accountListener);
   }
