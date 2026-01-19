@@ -9,12 +9,12 @@ body {
   background-color: transparent;
 }
 
+.window-drag-area > * {
+  -webkit-app-region: no-drag;
+}
+
 .window-drag-area {
   -webkit-app-region: drag;
   -webkit-user-select: none;
   user-select: none;
-}
-
-.window-drag-area > * {
-  -webkit-app-region: no-drag;
 }

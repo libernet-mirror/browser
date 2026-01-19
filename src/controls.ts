@@ -5,6 +5,7 @@ import {
   PRELOAD_WEBPACK_ENTRY,
   WEBPACK_ENTRY,
 } from "./constants";
+import { TabDescriptor } from "./data";
 
 export class ControlBar {
   private readonly _view: WebContentsView;
@@ -37,8 +38,9 @@ export class ControlBar {
     return sender === this._view.webContents;
   }
 
-  public setUrl(url: string): void {
-    this._view.webContents.send("root/url", url);
+  public update(tabs: TabDescriptor[], activeIndex: number): void {
+    this._view.webContents.send("window/tabs", tabs, activeIndex);
+    this._view.webContents.send("root/url", tabs[activeIndex].url);
   }
 
   public onStartNavigation(): void {

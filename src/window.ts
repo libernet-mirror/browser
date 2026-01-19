@@ -29,7 +29,18 @@ export class BrowserWindow {
   private readonly _window: BaseWindow;
   private readonly _controlBar: ControlBar;
   private readonly _tabs: Tab[] = [];
-  private _currentTab: Tab;
+  private _currentTabIndex: number;
+
+  private _createTab(url: string): Tab {
+    return new Tab(
+      this._window,
+      url,
+      () => this._updateControlBar(),
+      () => this._updateControlBar(),
+      () => this._controlBar.onStartNavigation(),
+      () => this._controlBar.onFinishNavigation(),
+    );
+  }
 
   private constructor(tabUrls: string[], settings: BrowserWindowSettings) {
     if (tabUrls.length < 1) {
@@ -58,24 +69,15 @@ export class BrowserWindow {
 
     this._controlBar = new ControlBar(this._window);
 
-    this._tabs = tabUrls.map(
-      (url) =>
-        new Tab(
-          this._window,
-          url,
-          (url) => this._controlBar.setUrl(url),
-          () => this._controlBar.onStartNavigation(),
-          () => this._controlBar.onFinishNavigation(),
-        ),
-    );
-    this._currentTab = this._tabs[0];
-    this._currentTab.show();
+    this._tabs = tabUrls.map((url) => this._createTab(url));
+    this._currentTabIndex = 0;
+    this._getCurrentTab().show();
     this._controlBar.bringForward();
 
     this._window
       .on("resize", () => {
         this._controlBar.resize();
-        this._currentTab.resize();
+        this._getCurrentTab().resize();
       })
       .on("moved", async () => {
         const { x, y } = this._window.getBounds();
@@ -100,14 +102,30 @@ export class BrowserWindow {
 
     ipcMain.handle("window/close", () => this.close());
 
-    ipcMain.handle("root/get-url", () => this._currentTab.getUrl());
-    ipcMain.handle("root/set-url", (_, url) => this._setUrl(url));
+    ipcMain.handle("window/get-tabs", () =>
+      this._tabs.map((tab) => tab.getDescriptor()),
+    );
 
-    ipcMain.handle("root/back", () => this._currentTab.goBack());
-    ipcMain.handle("root/forward", () => this._currentTab.goForward());
-    ipcMain.handle("root/refresh", () => this._currentTab.reload());
+    ipcMain.handle("window/get-active-tab", () => this._currentTabIndex);
+
+    ipcMain.handle("window/select-tab", (_, index: number) =>
+      this._setCurrentTab(index),
+    );
+
+    ipcMain.handle("window/add-tab", () => this._addTab());
+
+    ipcMain.handle("window/remove-tab", (_, index: number) =>
+      this._destroyTabAt(index),
+    );
+
+    ipcMain.handle("root/get-url", () => this._getCurrentTab().getUrl());
+    ipcMain.handle("root/set-url", (_, url: string) => this._setUrl(url));
+
+    ipcMain.handle("root/back", () => this._getCurrentTab().goBack());
+    ipcMain.handle("root/forward", () => this._getCurrentTab().goForward());
+    ipcMain.handle("root/refresh", () => this._getCurrentTab().reload());
     ipcMain.handle("root/cancel-navigation", () =>
-      this._currentTab.stopLoading(),
+      this._getCurrentTab().stopLoading(),
     );
   }
 
@@ -122,11 +140,36 @@ export class BrowserWindow {
     return new BrowserWindow([homeAddress], { x, y, width, height, maximized });
   }
 
-  private _setCurrentTab(tab: Tab): void {
-    this._currentTab.hide();
-    this._currentTab = tab;
-    tab.show();
+  private _getCurrentTab(): Tab {
+    return this._tabs[this._currentTabIndex];
+  }
+
+  private _updateControlBar(): void {
+    this._controlBar.update(
+      this._tabs.map((tab) => tab.getDescriptor()),
+      this._currentTabIndex,
+    );
+  }
+
+  private _setCurrentTab(index: number): void {
+    this._getCurrentTab().hide();
+    this._currentTabIndex = index;
+    this._getCurrentTab().show();
     this._controlBar.bringForward();
+    this._updateControlBar();
+  }
+
+  private _addTab(): void {
+    this._getCurrentTab().hide();
+    this._currentTabIndex = this._tabs.length;
+    this._tabs.push(this._createTab("liber://new"));
+    this._getCurrentTab().show();
+    this._controlBar.bringForward();
+    this._updateControlBar();
+  }
+
+  private _destroyTabAt(index: number): void {
+    // TODO
   }
 
   private _setUrl(url: string): void {
@@ -137,8 +180,7 @@ export class BrowserWindow {
         url = DEFAULT_SEARCH_ENGINE.replace("$QUERY$", encodeURIComponent(url));
       }
     }
-    this._controlBar.setUrl(url);
-    this._currentTab.setUrl(url);
+    this._getCurrentTab().setUrl(url);
   }
 
   public close(): void {

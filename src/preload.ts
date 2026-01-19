@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
 
 import {
+  TabDescriptor,
   type AccountInfo,
   type TransactionPayload,
   type TransactionQueryParams,
@@ -21,6 +22,7 @@ function makeEventHandler<Listener extends (...args: never[]) => void>(
   };
 }
 
+type TabListListener = (tabs: TabDescriptor[], activeIndex: number) => void;
 type NavigationListener = () => void;
 type UrlListener = (url: string) => void;
 type AccountListener = (account: AccountInfo) => void;
@@ -32,6 +34,12 @@ contextBridge.exposeInMainWorld("libernet", {
   minimizeWindow: () => ipcRenderer.invoke("window/minimize"),
   maximizeWindow: () => ipcRenderer.invoke("window/maximize"),
   closeWindow: () => ipcRenderer.invoke("window/close"),
+  getTabs: () => ipcRenderer.invoke("window/get-tabs"),
+  getActiveTabIndex: () => ipcRenderer.invoke("window/get-active-tab"),
+  selectTab: (index: number) => ipcRenderer.invoke("window/select-tab", index),
+  addTab: () => ipcRenderer.invoke("window/add-tab"),
+  removeTab: (index: number) => ipcRenderer.invoke("window/remove-tab", index),
+  onTabs: makeEventHandler<TabListListener>("window/tabs"),
   getUrl: () => ipcRenderer.invoke("root/get-url"),
   setUrl: (url: string) => ipcRenderer.invoke("root/set-url", url),
   onUrl: makeEventHandler<UrlListener>("root/url"),

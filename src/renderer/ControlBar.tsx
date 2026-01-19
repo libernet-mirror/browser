@@ -1,4 +1,7 @@
+import { clsx } from "clsx";
 import { useEffect, useMemo, useState } from "react";
+
+import { TabDescriptor } from "../data";
 
 import { PlainButton } from "./components/Buttons";
 import { CancelIcon } from "./icons/Cancel";
@@ -12,20 +15,78 @@ import { WalletIcon } from "./icons/Wallet";
 
 import { libernet } from "./Libernet";
 import { useAsyncEffect } from "./Utilities";
+import { PlusIcon } from "./icons/Plus";
 
-const Tabs = () => (
-  <div className="window-drag-area w-full bg-blue-100 p-1 text-right">
-    <PlainButton round style="blue" onClick={() => libernet().minimizeWindow()}>
-      <MinimizeIcon className="size-4" />
-    </PlainButton>
-    <PlainButton round style="blue" onClick={() => libernet().maximizeWindow()}>
-      <MaximizeIcon className="size-4" />
-    </PlainButton>
-    <PlainButton round style="blue" onClick={() => libernet().closeWindow()}>
-      <CancelIcon className="size-4" />
-    </PlainButton>
-  </div>
+const TabPill = ({
+  title,
+  index,
+  active = false,
+}: {
+  title: string;
+  index: number;
+  active?: boolean;
+}) => (
+  <button
+    className={clsx(
+      "mr-1 w-50 overflow-hidden rounded-md px-2 py-1 text-start text-sm text-nowrap overflow-ellipsis",
+      active
+        ? "bg-white shadow-sm"
+        : "bg-blue-100 hover:bg-blue-200 active:bg-blue-300",
+    )}
+    disabled={active}
+    onClick={() => libernet().selectTab(index)}
+  >
+    {title}
+  </button>
 );
+
+const Tabs = () => {
+  const [tabs, setTabs] = useState<TabDescriptor[]>([]);
+  const [activeTabIndex, setActiveTabIndex] = useState(0);
+  useAsyncEffect(async () => {
+    const destructor = libernet().onTabs(
+      (tabs: TabDescriptor[], activeIndex: number) => {
+        setTabs(tabs);
+        setActiveTabIndex(activeIndex);
+      },
+    );
+    setTabs(await libernet().getTabs());
+    return destructor;
+  }, []);
+  return (
+    <div className="window-drag-area flex w-full overflow-hidden bg-blue-100 p-1 align-middle">
+      {tabs.map(({ title }, index) => (
+        <TabPill
+          key={index}
+          title={title}
+          index={index}
+          active={index === activeTabIndex}
+        />
+      ))}
+      <PlainButton round style="blue" onClick={() => libernet().addTab()}>
+        <PlusIcon className="size-4" />
+      </PlainButton>
+      <span className="window-drag-area grow" />
+      <PlainButton
+        round
+        style="blue"
+        onClick={() => libernet().minimizeWindow()}
+      >
+        <MinimizeIcon className="size-4" />
+      </PlainButton>
+      <PlainButton
+        round
+        style="blue"
+        onClick={() => libernet().maximizeWindow()}
+      >
+        <MaximizeIcon className="size-4" />
+      </PlainButton>
+      <PlainButton round style="blue" onClick={() => libernet().closeWindow()}>
+        <CancelIcon className="size-4" />
+      </PlainButton>
+    </div>
+  );
+};
 
 const Navigation = () => {
   const [url, setUrl] = useState("");

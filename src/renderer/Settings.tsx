@@ -170,7 +170,7 @@ const NavItem = ({
 }) => (
   <label
     className={clsx(
-      "w-full cursor-pointer p-2 hover:bg-neutral-100 active:bg-neutral-200",
+      "w-full cursor-pointer p-2 whitespace-nowrap hover:bg-neutral-100 active:bg-neutral-200",
       active ? "bg-neutral-100" : "bg-transparent",
     )}
   >

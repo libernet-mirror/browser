@@ -7,6 +7,7 @@ import {
   WEBPACK_ENTRY,
 } from "./constants";
 import { AccountListener, offAccountProof, onAccountProof } from "./libernet";
+import { TabDescriptor } from "./data";
 
 export class Tab {
   private _view: WebContentsView | null = null;
@@ -46,6 +47,7 @@ export class Tab {
     private readonly _parentWindow: BaseWindow,
     private _url: string,
     private readonly _onUrl: (url: string) => void,
+    private readonly _onTitle: (title: string) => void,
     private readonly _onStartNavigation: () => void,
     private readonly _onFinishNavigation: () => void,
   ) {}
@@ -92,6 +94,9 @@ export class Tab {
       })
       .on("did-stop-loading", () => {
         this._onFinishNavigation();
+      })
+      .on("page-title-updated", () => {
+        this._onTitle(this.getTitle());
       });
     const { width, height } = this._parentWindow.getBounds();
     view.setBounds({
@@ -103,7 +108,6 @@ export class Tab {
   }
 
   private _createWebView(): WebContentsView {
-    console.log(`setWebView(${JSON.stringify(this._url)})`);
     const view = new WebContentsView({
       webPreferences: {
         contextIsolation: true,
@@ -116,7 +120,6 @@ export class Tab {
   }
 
   private _createSystemView(): WebContentsView {
-    console.log(`setSystemView(${JSON.stringify(this._url)})`);
     const view = new WebContentsView({
       webPreferences: {
         contextIsolation: true,
@@ -178,6 +181,20 @@ export class Tab {
     this._url = url;
     this._view = this._createView();
     this._parentWindow.contentView.addChildView(this._view);
+  }
+
+  public getTitle(): string {
+    return (
+      this._view?.webContents?.getTitle() ??
+      Tab._mapSystemUrlToUserUrl(this._url)
+    );
+  }
+
+  public getDescriptor(): TabDescriptor {
+    return {
+      title: this.getTitle(),
+      url: this._url,
+    };
   }
 
   public show(): void {

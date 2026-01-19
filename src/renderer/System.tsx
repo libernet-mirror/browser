@@ -19,10 +19,16 @@ export const System = () => {
   }, []);
   switch (view) {
     case "control":
+      document.title = "Libernet";
       return <ControlBar />;
+    case "new":
+      document.title = "New tab";
+      return null;
     case "settings":
+      document.title = "Libernet Settings";
       return <SettingsPage />;
     case "wallet":
+      document.title = "LiberWallet";
       return <WalletPage />;
     default:
       return null;

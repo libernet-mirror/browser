@@ -6,12 +6,25 @@ import {
   type TransactionType,
 } from "../data";
 
+export interface TabDescriptor {
+  title: string;
+  url: string;
+}
+
 export interface LibernetAPI {
   getHomePage(): Promise<string>;
   setHomePage(homePage: string): Promise<string>;
   minimizeWindow(): Promise<void>;
   maximizeWindow(): Promise<void>;
   closeWindow(): Promise<void>;
+  getTabs(): Promise<TabDescriptor[]>;
+  getActiveTabIndex(): Promise<number>;
+  selectTab(index: number): Promise<void>;
+  addTab(): Promise<void>;
+  removeTab(index: number): Promise<void>;
+  onTabs(
+    listener: (tabs: TabDescriptor[], activeIndex: number) => void,
+  ): () => void;
   getUrl(): Promise<string>;
   setUrl(url: string): Promise<void>;
   onUrl(listener: (url: string) => void): () => void;
