@@ -1,4 +1,4 @@
-import { BaseWindow, WebContents, WebContentsView } from "electron";
+import { app, BaseWindow, WebContents, WebContentsView } from "electron";
 
 import {
   CONTROL_BAR_HEIGHT,
@@ -8,9 +8,19 @@ import {
 import { TabDescriptor } from "./data";
 
 export class ControlBar {
-  private static readonly _CONTENT_SECURITY_POLICY = `
+  private static readonly _CONTENT_SECURITY_POLICY_DEV = `
     default-src 'self';
     script-src 'self' 'unsafe-eval';
+    style-src 'self' 'unsafe-inline';
+    img-src * data: blob:;
+    connect-src ws: http: https:;
+  `
+    .replace(/\s+/g, " ")
+    .trim();
+
+  private static readonly _CONTENT_SECURITY_POLICY_PROD = `
+    default-src 'self';
+    script-src 'self';
     style-src 'self' 'unsafe-inline';
     img-src * data: blob:;
     connect-src ws: http: https:;
@@ -34,7 +44,9 @@ export class ControlBar {
         callback({
           responseHeaders: {
             ...details.responseHeaders,
-            "Content-Security-Policy": ControlBar._CONTENT_SECURITY_POLICY,
+            "Content-Security-Policy": app.isPackaged
+              ? ControlBar._CONTENT_SECURITY_POLICY_PROD
+              : ControlBar._CONTENT_SECURITY_POLICY_DEV,
           },
         });
       },
