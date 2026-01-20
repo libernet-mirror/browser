@@ -36,7 +36,6 @@ export class BrowserWindow {
       this._window,
       url,
       () => this._updateControlBar(),
-      () => this._updateControlBar(),
       () => this._controlBar.onStartNavigation(),
       () => this._controlBar.onFinishNavigation(),
     );
