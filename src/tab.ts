@@ -188,9 +188,11 @@ export class Tab {
       this._parentWindow.contentView.removeChildView(this._view);
       this._view.webContents?.close();
     }
+    this._icons = [];
     this._url = url;
     this._view = this._createView();
     this._parentWindow.contentView.addChildView(this._view);
+    this._triggerUpdate();
   }
 
   public getTitle(): string {

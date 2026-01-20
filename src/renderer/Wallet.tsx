@@ -35,7 +35,7 @@ import { SpinnerIcon } from "./icons/Spinner";
 
 import { jazzicon } from "./Jazzicon";
 import { libernet } from "./Libernet";
-import Logo from "./Logo";
+import { Logo } from "./Logo";
 import { formatLibAmount, parseLibAmount, useAsyncEffect } from "./Utilities";
 import { Page as WalletLoginPage } from "./WalletLogin";
 import { Page as WalletSetupPage } from "./WalletSetup";
