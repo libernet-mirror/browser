@@ -4,6 +4,7 @@
 export interface TabDescriptor {
   title: string;
   url: string;
+  icons: string[];
 }
 
 export class BlockDescriptor {

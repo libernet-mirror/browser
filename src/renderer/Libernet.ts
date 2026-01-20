@@ -9,6 +9,7 @@ import {
 export interface TabDescriptor {
   title: string;
   url: string;
+  icons: string[];
 }
 
 export interface LibernetAPI {

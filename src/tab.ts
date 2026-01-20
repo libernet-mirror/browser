@@ -11,6 +11,7 @@ import { TabDescriptor } from "./data";
 
 export class Tab {
   private _view: WebContentsView | null = null;
+  private _icons: string[] = [];
   private _accountListener: AccountListener | null = null;
 
   // REQUIRES: `url` must be valid and must include the protocol part.
@@ -46,15 +47,18 @@ export class Tab {
   public constructor(
     private readonly _parentWindow: BaseWindow,
     private _url: string,
-    private readonly _onUrl: (url: string) => void,
-    private readonly _onTitle: (title: string) => void,
+    private readonly _onUpdate: (descriptor: TabDescriptor) => void,
     private readonly _onStartNavigation: () => void,
     private readonly _onFinishNavigation: () => void,
   ) {}
 
+  private _triggerUpdate(): void {
+    this._onUpdate(this.getDescriptor());
+  }
+
   private _notifyUrl(url: string): void {
     this._url = Tab._mapSystemUrlToUserUrl(url);
-    this._onUrl(this._url);
+    this._triggerUpdate();
   }
 
   private _installAccountListenerFor(view: WebContentsView): void {
@@ -96,7 +100,11 @@ export class Tab {
         this._onFinishNavigation();
       })
       .on("page-title-updated", () => {
-        this._onTitle(this.getTitle());
+        this._triggerUpdate();
+      })
+      .on("page-favicon-updated", (_, icons: string[]) => {
+        this._icons = icons;
+        this._triggerUpdate();
       });
     const { width, height } = this._parentWindow.getBounds();
     view.setBounds({
@@ -111,6 +119,7 @@ export class Tab {
     const view = new WebContentsView({
       webPreferences: {
         contextIsolation: true,
+        partition: "persist:libernet",
         devTools: true,
       },
     });
@@ -123,6 +132,7 @@ export class Tab {
     const view = new WebContentsView({
       webPreferences: {
         contextIsolation: true,
+        partition: "system",
         devTools: false,
         preload: PRELOAD_WEBPACK_ENTRY,
       },
@@ -190,10 +200,15 @@ export class Tab {
     );
   }
 
+  public getIcons(): string[] {
+    return this._icons;
+  }
+
   public getDescriptor(): TabDescriptor {
     return {
       title: this.getTitle(),
       url: this._url,
+      icons: this._icons,
     };
   }
 

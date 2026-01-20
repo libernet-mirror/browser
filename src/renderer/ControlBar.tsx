@@ -18,34 +18,41 @@ import { useAsyncEffect } from "./Utilities";
 import { PlusIcon } from "./icons/Plus";
 
 const TabPill = ({
-  title,
+  descriptor,
   index,
   active = false,
 }: {
-  title: string;
+  descriptor: TabDescriptor;
   index: number;
   active?: boolean;
 }) => (
   <div
     className={clsx(
-      "mr-1 flex w-50 flex-row overflow-hidden rounded-md text-sm text-nowrap rtl:flex-row-reverse",
+      "mr-1 flex w-50 flex-row gap-x-1 overflow-hidden rounded-md p-1 text-sm text-nowrap rtl:flex-row-reverse",
       active
         ? "bg-white shadow-sm"
         : "bg-blue-100 hover:bg-blue-200 active:bg-blue-300",
     )}
   >
+    {descriptor.icons.length && (
+      <img
+        className="my-auto size-[1.25rem]"
+        src={descriptor.icons[0]}
+        alt=""
+      />
+    )}
     <button
       className={clsx(
-        "grow overflow-hidden bg-transparent px-2 py-1 text-start overflow-ellipsis",
+        "grow overflow-hidden bg-transparent text-start overflow-ellipsis",
       )}
       disabled={active}
       onClick={() => libernet().selectTab(index)}
     >
-      {title}
+      {descriptor.title}
     </button>
     <button
       className={clsx(
-        "bg-transparent p-1",
+        "my-auto rounded-full bg-transparent p-0.5",
         active
           ? "hover:bg-neutral-200 active:bg-neutral-300"
           : "hover:bg-blue-300 active:bg-blue-400",
@@ -72,10 +79,10 @@ const Tabs = () => {
   }, []);
   return (
     <div className="window-drag-area flex w-full overflow-hidden bg-blue-100 p-1 align-middle">
-      {tabs.map(({ title }, index) => (
+      {tabs.map((tab, index) => (
         <TabPill
           key={index}
-          title={title}
+          descriptor={tab}
           index={index}
           active={index === activeTabIndex}
         />
