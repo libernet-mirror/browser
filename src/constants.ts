@@ -7,6 +7,8 @@ declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 export const WEBPACK_ENTRY = MAIN_WINDOW_WEBPACK_ENTRY;
 export const PRELOAD_WEBPACK_ENTRY = MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY;
 
+export const PROTO_TYPE_NAME_PREFIX = "type.libernet.org";
+
 export const INITIAL_WIDTH = 800;
 export const INITIAL_HEIGHT = 600;
 export const CONTROL_BAR_HEIGHT = 85;

@@ -11,6 +11,8 @@ import type { PointG1 } from "./proto/libernet/PointG1";
 import type { PointG2 } from "./proto/libernet/PointG2";
 import type { Scalar } from "./proto/libernet/Scalar";
 
+import { PROTO_TYPE_NAME_PREFIX } from "./constants";
+
 export function derToPem(der: Buffer, label: string): string {
   const base64 = der.toString("base64");
   const formatted = base64.replace(/(.{64})/g, "$1\n");
@@ -225,7 +227,7 @@ const protoDefinitionRoot = protobuf.loadSync(getPackageDefintionPath());
 function getMessageType(typeName: string): protobuf.Type {
   const type = protoDefinitionRoot.lookupType(typeName);
   if (!type) {
-    throw new Error(`unknown type name: ${typeName}`);
+    throw new Error(`unknown type name: ${JSON.stringify(typeName)}`);
   }
   return type;
 }
@@ -237,7 +239,7 @@ export function packAny<T>(proto: T, typeName: string): AnyProto {
     throw new Error(error);
   }
   return {
-    type_url: `type.libernet.org/${typeName}`,
+    type_url: `${PROTO_TYPE_NAME_PREFIX}/${typeName}`,
     value: messageType.encode(proto).finish(),
   };
 }
@@ -257,10 +259,10 @@ export function unpackAny<T>(any: AnyProto): T {
     type_url: string;
     value: Buffer | Uint8Array | string;
   };
-  const typeName = type_url.split("/").pop();
-  if (!typeName) {
-    throw new Error(`invalid type_url: ${type_url}`);
+  if (!type_url.startsWith(PROTO_TYPE_NAME_PREFIX + "/")) {
+    throw new Error(`invalid type_url: ${JSON.stringify(type_url)}`);
   }
+  const typeName = type_url.slice(PROTO_TYPE_NAME_PREFIX.length + 1);
   const messageType = getMessageType(typeName);
   const bytes = normalizeBytes(value);
   return messageType.decode(bytes) as unknown as T;
