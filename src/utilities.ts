@@ -211,11 +211,7 @@ export function decodeTimestamp(proto: TimestampProto): Date {
 }
 
 function getPackageDefintionPath(): string {
-  return path.join(
-    app.isPackaged ? path.dirname(app.getPath("exe")) : app.getAppPath(),
-    "proto",
-    "libernet.proto",
-  );
+  return path.join(app.getAppPath(), ".webpack", "proto", "libernet.proto");
 }
 
 export const libernetPackageDefinition = loadProtoSync(
