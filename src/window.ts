@@ -1,4 +1,11 @@
-import { BaseWindow, BaseWindowConstructorOptions, ipcMain } from "electron";
+import path from "node:path";
+
+import {
+  app,
+  BaseWindow,
+  BaseWindowConstructorOptions,
+  ipcMain,
+} from "electron";
 
 import {
   getHomeAddress,
@@ -48,6 +55,7 @@ export class BrowserWindow {
 
     const options: BaseWindowConstructorOptions = {
       title: "Libernet",
+      icon: path.join(app.getAppPath(), ".webpack", "images", "logo.png"),
       width: settings.width,
       height: settings.height,
       show: false,
