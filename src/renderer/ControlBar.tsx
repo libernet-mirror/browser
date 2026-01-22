@@ -56,7 +56,7 @@ const TabPill = ({
 }) => (
   <div
     className={clsx(
-      "mr-1 flex w-50 flex-row gap-x-2 overflow-hidden rounded-md px-2 py-1 text-sm text-nowrap rtl:flex-row-reverse",
+      "mr-1 flex w-50 min-w-15 flex-row gap-x-2 overflow-hidden rounded-md px-2 py-1 text-sm text-nowrap rtl:flex-row-reverse",
       active
         ? "bg-white shadow-sm"
         : "bg-blue-100 hover:bg-blue-200 active:bg-blue-300",
