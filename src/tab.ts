@@ -1,4 +1,11 @@
-import { BaseWindow, WebContents, WebContentsView } from "electron";
+import {
+  BaseWindow,
+  BrowserWindowConstructorOptions,
+  HandlerDetails,
+  Session,
+  WebContents,
+  WebContentsView,
+} from "electron";
 
 import {
   CONTROL_BAR_HEIGHT,
@@ -6,8 +13,13 @@ import {
   URL_PREFIX_PATTERN,
   WEBPACK_ENTRY,
 } from "./constants";
-import { AccountListener, offAccountProof, onAccountProof } from "./libernet";
 import { TabDescriptor } from "./data";
+import { AccountListener, offAccountProof, onAccountProof } from "./libernet";
+
+export type TabOverrideSettings = {
+  session?: Session;
+  partition?: string;
+};
 
 export class Tab {
   private _view: WebContentsView | null = null;
@@ -47,9 +59,13 @@ export class Tab {
   public constructor(
     private readonly _parentWindow: BaseWindow,
     private _url: string,
+    private readonly _overrides: TabOverrideSettings,
     private readonly _onUpdate: (descriptor: TabDescriptor) => void,
     private readonly _onStartNavigation: () => void,
     private readonly _onFinishNavigation: () => void,
+    private readonly _makeCreateWindow: (
+      details: HandlerDetails,
+    ) => (options: BrowserWindowConstructorOptions) => WebContents,
   ) {}
 
   private _triggerUpdate(): void {
@@ -105,7 +121,12 @@ export class Tab {
       .on("page-favicon-updated", (_, icons: string[]) => {
         this._icons = icons;
         this._triggerUpdate();
-      });
+      })
+      .setWindowOpenHandler((details: HandlerDetails) => ({
+        action: "allow",
+        createWindow: this._makeCreateWindow(details),
+        outlivesOpener: true,
+      }));
     const { width, height } = this._parentWindow.getBounds();
     view.setBounds({
       x: 0,
@@ -119,7 +140,8 @@ export class Tab {
     const view = new WebContentsView({
       webPreferences: {
         contextIsolation: true,
-        partition: "persist:libernet",
+        session: this._overrides.session ?? void 0,
+        partition: this._overrides.partition ?? "persist:libernet",
         devTools: true,
       },
     });
@@ -163,7 +185,7 @@ export class Tab {
     }
   }
 
-  private _getView(resize = false): WebContentsView {
+  public getView(resize = false): WebContentsView {
     if (!this._view) {
       this._view = this._createView();
     } else if (resize) {
@@ -215,7 +237,7 @@ export class Tab {
   }
 
   public show(): void {
-    const view = this._getView(/*resize=*/ true);
+    const view = this.getView(/*resize=*/ true);
     this._parentWindow.contentView.addChildView(view);
   }
 
@@ -230,19 +252,19 @@ export class Tab {
   }
 
   public resize(): void {
-    this._getView(/*resize=*/ true);
+    this.getView(/*resize=*/ true);
   }
 
   public goBack(): void {
-    this._getView().webContents?.navigationHistory.goBack();
+    this.getView().webContents?.navigationHistory.goBack();
   }
 
   public goForward(): void {
-    this._getView().webContents?.navigationHistory.goForward();
+    this.getView().webContents?.navigationHistory.goForward();
   }
 
   public reload(): void {
-    this._getView().webContents?.reload();
+    this.getView().webContents?.reload();
   }
 
   public stopLoading(): void {

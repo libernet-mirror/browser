@@ -4,7 +4,10 @@ import {
   app,
   BaseWindow,
   BaseWindowConstructorOptions,
+  BrowserWindowConstructorOptions,
+  HandlerDetails,
   ipcMain,
+  WebContents,
 } from "electron";
 
 import {
@@ -22,7 +25,7 @@ import {
   URL_PREFIX_PATTERN,
 } from "./constants";
 import { ControlBar } from "./controls";
-import { Tab } from "./tab";
+import { Tab, TabOverrideSettings } from "./tab";
 
 export interface BrowserWindowSettings {
   x: number | null;
@@ -38,13 +41,25 @@ export class BrowserWindow {
   private readonly _tabs: Tab[] = [];
   private _currentTabIndex: number;
 
-  private _createTab(url: string): Tab {
+  private _createTab(url: string, overrides: TabOverrideSettings = {}): Tab {
     return new Tab(
       this._window,
       url,
+      overrides,
       () => this._updateControlBar(),
       () => this._controlBar.onStartNavigation(),
       () => this._controlBar.onFinishNavigation(),
+      ({ url, disposition }: HandlerDetails) =>
+        ({ webPreferences }: BrowserWindowConstructorOptions) =>
+          this._insertTab(
+            this._tabs.length,
+            url,
+            {
+              session: webPreferences?.session,
+              partition: webPreferences?.partition,
+            },
+            /*activate=*/ disposition !== "background-tab",
+          ),
     );
   }
 
@@ -79,7 +94,6 @@ export class BrowserWindow {
     this._tabs = tabUrls.map((url) => this._createTab(url));
     this._currentTabIndex = 0;
     this._getCurrentTab().show();
-    this._controlBar.bringForward();
 
     this._window
       .on("resize", () => {
@@ -162,17 +176,45 @@ export class BrowserWindow {
     this._getCurrentTab().hide();
     this._currentTabIndex = index;
     this._getCurrentTab().show();
-    this._controlBar.bringForward();
     this._updateControlBar();
   }
 
-  private _addTab(): void {
-    this._getCurrentTab().hide();
-    this._currentTabIndex = this._tabs.length;
-    this._tabs.push(this._createTab("liber://new"));
-    this._getCurrentTab().show();
-    this._controlBar.bringForward();
+  private _insertTab(
+    index: number,
+    url: string,
+    overrides: TabOverrideSettings,
+    activate: boolean,
+  ): WebContents {
+    if (index < 0) {
+      throw new Error(`invalid new tab index ${index}`);
+    }
+    if (index > this._tabs.length) {
+      throw new Error(
+        `invalid new tab index ${index}, must be less than or equal to ${this._tabs.length}`,
+      );
+    }
+    if (activate) {
+      this._getCurrentTab().hide();
+      this._currentTabIndex = index;
+    } else if (this._currentTabIndex >= index) {
+      this._currentTabIndex++;
+    }
+    this._tabs.splice(index, 0, this._createTab(url, overrides));
+    const tab = this._getCurrentTab();
+    if (activate) {
+      tab.show();
+    }
     this._updateControlBar();
+    return tab.getView().webContents;
+  }
+
+  private _addTab(): void {
+    this._insertTab(
+      this._tabs.length,
+      "liber://new",
+      /*overrides=*/ {},
+      /*activate=*/ true,
+    );
   }
 
   private _destroyTabAt(index: number): void {
@@ -189,7 +231,6 @@ export class BrowserWindow {
       this._tabs.length - 1,
     );
     this._getCurrentTab().show();
-    this._controlBar.bringForward();
     this._updateControlBar();
   }
 
