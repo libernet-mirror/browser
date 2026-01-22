@@ -4,10 +4,8 @@ import {
   app,
   BaseWindow,
   BaseWindowConstructorOptions,
-  BrowserWindowConstructorOptions,
   HandlerDetails,
   ipcMain,
-  WebContents,
 } from "electron";
 
 import {
@@ -25,7 +23,7 @@ import {
   URL_PREFIX_PATTERN,
 } from "./constants";
 import { ControlBar } from "./controls";
-import { Tab, TabOverrideSettings } from "./tab";
+import { Tab } from "./tab";
 
 export interface BrowserWindowSettings {
   x: number | null;
@@ -41,25 +39,19 @@ export class BrowserWindow {
   private readonly _tabs: Tab[] = [];
   private _currentTabIndex: number;
 
-  private _createTab(url: string, overrides: TabOverrideSettings = {}): Tab {
+  private _createTab(url: string): Tab {
     return new Tab(
       this._window,
       url,
-      overrides,
       () => this._updateControlBar(),
       () => this._controlBar.onStartNavigation(),
       () => this._controlBar.onFinishNavigation(),
       ({ url, disposition }: HandlerDetails) =>
-        ({ webPreferences }: BrowserWindowConstructorOptions) =>
-          this._insertTab(
-            this._tabs.length,
-            url,
-            {
-              session: webPreferences?.session,
-              partition: webPreferences?.partition,
-            },
-            /*activate=*/ disposition !== "background-tab",
-          ),
+        this._insertTab(
+          this._tabs.length,
+          url,
+          /*activate=*/ disposition !== "background-tab",
+        ),
     );
   }
 
@@ -179,12 +171,7 @@ export class BrowserWindow {
     this._updateControlBar();
   }
 
-  private _insertTab(
-    index: number,
-    url: string,
-    overrides: TabOverrideSettings,
-    activate: boolean,
-  ): WebContents {
+  private _insertTab(index: number, url: string, activate: boolean): void {
     if (index < 0) {
       throw new Error(`invalid new tab index ${index}`);
     }
@@ -199,22 +186,16 @@ export class BrowserWindow {
     } else if (this._currentTabIndex >= index) {
       this._currentTabIndex++;
     }
-    this._tabs.splice(index, 0, this._createTab(url, overrides));
+    this._tabs.splice(index, 0, this._createTab(url));
     const tab = this._getCurrentTab();
     if (activate) {
       tab.show();
     }
     this._updateControlBar();
-    return tab.getView().webContents;
   }
 
   private _addTab(): void {
-    this._insertTab(
-      this._tabs.length,
-      "liber://new",
-      /*overrides=*/ {},
-      /*activate=*/ true,
-    );
+    this._insertTab(this._tabs.length, "liber://new", /*activate=*/ true);
   }
 
   private _destroyTabAt(index: number): void {

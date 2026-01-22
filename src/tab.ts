@@ -1,6 +1,5 @@
 import {
   BaseWindow,
-  BrowserWindowConstructorOptions,
   HandlerDetails,
   Session,
   WebContents,
@@ -59,13 +58,10 @@ export class Tab {
   public constructor(
     private readonly _parentWindow: BaseWindow,
     private _url: string,
-    private readonly _overrides: TabOverrideSettings,
     private readonly _onUpdate: (descriptor: TabDescriptor) => void,
     private readonly _onStartNavigation: () => void,
     private readonly _onFinishNavigation: () => void,
-    private readonly _makeCreateWindow: (
-      details: HandlerDetails,
-    ) => (options: BrowserWindowConstructorOptions) => WebContents,
+    private readonly _createWindow: (details: HandlerDetails) => void,
   ) {}
 
   private _triggerUpdate(): void {
@@ -122,11 +118,10 @@ export class Tab {
         this._icons = icons;
         this._triggerUpdate();
       })
-      .setWindowOpenHandler((details: HandlerDetails) => ({
-        action: "allow",
-        createWindow: this._makeCreateWindow(details),
-        outlivesOpener: true,
-      }));
+      .setWindowOpenHandler((details: HandlerDetails) => {
+        this._createWindow(details);
+        return { action: "deny" };
+      });
     const { width, height } = this._parentWindow.getBounds();
     view.setBounds({
       x: 0,
@@ -141,8 +136,7 @@ export class Tab {
     const view = new WebContentsView({
       webPreferences: {
         contextIsolation: true,
-        session: this._overrides.session ?? void 0,
-        partition: this._overrides.partition ?? "persist:libernet",
+        partition: "persist:libernet",
         devTools: true,
       },
     });
@@ -151,10 +145,6 @@ export class Tab {
   }
 
   private _createSystemView(): WebContentsView {
-    // NOTE: we're intentionally ignoring the session and partition overrides here for security
-    // reasons & paranoia. The system session must be completely isolated from the regular web
-    // browsing session. For example, we don't want any cookies set by the system pages to enter the
-    // web browsing session.
     const view = new WebContentsView({
       webPreferences: {
         contextIsolation: true,
@@ -188,7 +178,7 @@ export class Tab {
     }
   }
 
-  public getView(resize = false): WebContentsView {
+  private _getView(resize = false): WebContentsView {
     if (!this._view) {
       this._view = this._createView();
     } else if (resize) {
@@ -240,7 +230,7 @@ export class Tab {
   }
 
   public show(): void {
-    const view = this.getView(/*resize=*/ true);
+    const view = this._getView(/*resize=*/ true);
     this._parentWindow.contentView.addChildView(view);
   }
 
@@ -255,19 +245,19 @@ export class Tab {
   }
 
   public resize(): void {
-    this.getView(/*resize=*/ true);
+    this._getView(/*resize=*/ true);
   }
 
   public goBack(): void {
-    this.getView().webContents?.navigationHistory.goBack();
+    this._getView().webContents?.navigationHistory.goBack();
   }
 
   public goForward(): void {
-    this.getView().webContents?.navigationHistory.goForward();
+    this._getView().webContents?.navigationHistory.goForward();
   }
 
   public reload(): void {
-    this.getView().webContents?.reload();
+    this._getView().webContents?.reload();
   }
 
   public stopLoading(): void {
