@@ -1,4 +1,10 @@
-import { BaseWindow, WebContents, WebContentsView } from "electron";
+import {
+  BaseWindow,
+  HandlerDetails,
+  Session,
+  WebContents,
+  WebContentsView,
+} from "electron";
 
 import {
   CONTROL_BAR_HEIGHT,
@@ -6,8 +12,13 @@ import {
   URL_PREFIX_PATTERN,
   WEBPACK_ENTRY,
 } from "./constants";
-import { AccountListener, offAccountProof, onAccountProof } from "./libernet";
 import { TabDescriptor } from "./data";
+import { AccountListener, offAccountProof, onAccountProof } from "./libernet";
+
+export type TabOverrideSettings = {
+  session?: Session;
+  partition?: string;
+};
 
 export class Tab {
   private _view: WebContentsView | null = null;
@@ -50,6 +61,7 @@ export class Tab {
     private readonly _onUpdate: (descriptor: TabDescriptor) => void,
     private readonly _onStartNavigation: () => void,
     private readonly _onFinishNavigation: () => void,
+    private readonly _createWindow: (details: HandlerDetails) => void,
   ) {}
 
   private _triggerUpdate(): void {
@@ -105,6 +117,10 @@ export class Tab {
       .on("page-favicon-updated", (_, icons: string[]) => {
         this._icons = icons;
         this._triggerUpdate();
+      })
+      .setWindowOpenHandler((details: HandlerDetails) => {
+        this._createWindow(details);
+        return { action: "deny" };
       });
     const { width, height } = this._parentWindow.getBounds();
     view.setBounds({
@@ -113,6 +129,7 @@ export class Tab {
       width,
       height: height - CONTROL_BAR_HEIGHT,
     });
+    view.webContents.loadURL(Tab._mapUserUrlToSystemUrl(this._url));
   }
 
   private _createWebView(): WebContentsView {
@@ -124,7 +141,6 @@ export class Tab {
       },
     });
     this._configureView(view);
-    view.webContents.loadURL(Tab._mapUserUrlToSystemUrl(this._url));
     return view;
   }
 
@@ -138,7 +154,6 @@ export class Tab {
       },
     });
     this._configureView(view);
-    view.webContents.loadURL(Tab._mapUserUrlToSystemUrl(this._url));
     return view;
   }
 

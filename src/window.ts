@@ -1,4 +1,12 @@
-import { BaseWindow, BaseWindowConstructorOptions, ipcMain } from "electron";
+import path from "node:path";
+
+import {
+  app,
+  BaseWindow,
+  BaseWindowConstructorOptions,
+  HandlerDetails,
+  ipcMain,
+} from "electron";
 
 import {
   getHomeAddress,
@@ -38,6 +46,12 @@ export class BrowserWindow {
       () => this._updateControlBar(),
       () => this._controlBar.onStartNavigation(),
       () => this._controlBar.onFinishNavigation(),
+      ({ url, disposition }: HandlerDetails) =>
+        this._insertTab(
+          this._tabs.length,
+          url,
+          /*activate=*/ disposition !== "background-tab",
+        ),
     );
   }
 
@@ -48,6 +62,7 @@ export class BrowserWindow {
 
     const options: BaseWindowConstructorOptions = {
       title: "Libernet",
+      icon: path.join(app.getAppPath(), ".webpack", "images", "logo.png"),
       width: settings.width,
       height: settings.height,
       show: false,
@@ -71,7 +86,6 @@ export class BrowserWindow {
     this._tabs = tabUrls.map((url) => this._createTab(url));
     this._currentTabIndex = 0;
     this._getCurrentTab().show();
-    this._controlBar.bringForward();
 
     this._window
       .on("resize", () => {
@@ -154,17 +168,34 @@ export class BrowserWindow {
     this._getCurrentTab().hide();
     this._currentTabIndex = index;
     this._getCurrentTab().show();
-    this._controlBar.bringForward();
+    this._updateControlBar();
+  }
+
+  private _insertTab(index: number, url: string, activate: boolean): void {
+    if (index < 0) {
+      throw new Error(`invalid new tab index ${index}`);
+    }
+    if (index > this._tabs.length) {
+      throw new Error(
+        `invalid new tab index ${index}, must be less than or equal to ${this._tabs.length}`,
+      );
+    }
+    if (activate) {
+      this._getCurrentTab().hide();
+      this._currentTabIndex = index;
+    } else if (this._currentTabIndex >= index) {
+      this._currentTabIndex++;
+    }
+    this._tabs.splice(index, 0, this._createTab(url));
+    const tab = this._getCurrentTab();
+    if (activate) {
+      tab.show();
+    }
     this._updateControlBar();
   }
 
   private _addTab(): void {
-    this._getCurrentTab().hide();
-    this._currentTabIndex = this._tabs.length;
-    this._tabs.push(this._createTab("liber://new"));
-    this._getCurrentTab().show();
-    this._controlBar.bringForward();
-    this._updateControlBar();
+    this._insertTab(this._tabs.length, "liber://new", /*activate=*/ true);
   }
 
   private _destroyTabAt(index: number): void {
@@ -181,7 +212,6 @@ export class BrowserWindow {
       this._tabs.length - 1,
     );
     this._getCurrentTab().show();
-    this._controlBar.bringForward();
     this._updateControlBar();
   }
 

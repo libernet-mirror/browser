@@ -25,10 +25,14 @@ const FavIcon = ({
   src: string;
   className?: string;
 }) => {
-  const [loaded, setLoaded] = useState(src);
+  const [loaded, setLoaded] = useState<string | null>(null);
   return (
     <>
-      {loaded !== src && <GrayedLogo className={className} />}
+      {loaded !== src && (
+        <span>
+          <GrayedLogo className={className} />
+        </span>
+      )}
       {src && (
         <img
           className={clsx(className, loaded !== src && "hidden")}
@@ -52,23 +56,31 @@ const TabPill = ({
 }) => (
   <div
     className={clsx(
-      "mr-1 flex w-50 flex-row gap-x-1 overflow-hidden rounded-md p-1 text-sm text-nowrap rtl:flex-row-reverse",
+      "mr-1 flex w-50 min-w-15 flex-row gap-x-2 overflow-hidden rounded-md px-2 py-1 text-sm text-nowrap rtl:flex-row-reverse",
       active
         ? "bg-white shadow-sm"
         : "bg-blue-100 hover:bg-blue-200 active:bg-blue-300",
     )}
   >
     {url.startsWith("liber://") ? (
-      <Logo className="my-auto size-[1.25rem]" />
+      <span>
+        <Logo className="my-auto size-[1.25rem]" />
+      </span>
     ) : (
       <FavIcon className="my-auto size-[1.25rem]" src={icons[0] ?? ""} />
     )}
     <button
-      className={clsx(
-        "grow overflow-hidden bg-transparent text-start overflow-ellipsis",
-      )}
-      disabled={active}
-      onClick={() => libernet().selectTab(index)}
+      className="grow overflow-hidden bg-transparent text-start overflow-ellipsis"
+      onClick={({ button }) => {
+        if (!active && button !== 1) {
+          libernet().selectTab(index);
+        }
+      }}
+      onMouseUp={({ button }) => {
+        if (button === 1) {
+          libernet().removeTab(index);
+        }
+      }}
     >
       {title}
     </button>

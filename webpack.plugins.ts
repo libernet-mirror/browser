@@ -13,6 +13,10 @@ export const plugins: NonNullable<Configuration["plugins"]> = [
         from: "proto/*.proto",
         to: "../",
       },
+      {
+        from: "images/logo.png",
+        to: "../images/logo.png",
+      },
     ],
   }),
 ];
