@@ -134,6 +134,7 @@ export class Tab {
       width,
       height: height - CONTROL_BAR_HEIGHT,
     });
+    view.webContents.loadURL(Tab._mapUserUrlToSystemUrl(this._url));
   }
 
   private _createWebView(): WebContentsView {
@@ -146,11 +147,14 @@ export class Tab {
       },
     });
     this._configureView(view);
-    view.webContents.loadURL(Tab._mapUserUrlToSystemUrl(this._url));
     return view;
   }
 
   private _createSystemView(): WebContentsView {
+    // NOTE: we're intentionally ignoring the session and partition overrides here for security
+    // reasons & paranoia. The system session must be completely isolated from the regular web
+    // browsing session. For example, we don't want any cookies set by the system pages to enter the
+    // web browsing session.
     const view = new WebContentsView({
       webPreferences: {
         contextIsolation: true,
@@ -160,7 +164,6 @@ export class Tab {
       },
     });
     this._configureView(view);
-    view.webContents.loadURL(Tab._mapUserUrlToSystemUrl(this._url));
     return view;
   }
 
