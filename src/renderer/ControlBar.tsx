@@ -25,10 +25,14 @@ const FavIcon = ({
   src: string;
   className?: string;
 }) => {
-  const [loaded, setLoaded] = useState(src);
+  const [loaded, setLoaded] = useState<string | null>(null);
   return (
     <>
-      {loaded !== src && <GrayedLogo className={className} />}
+      {loaded !== src && (
+        <span>
+          <GrayedLogo className={className} />
+        </span>
+      )}
       {src && (
         <img
           className={clsx(className, loaded !== src && "hidden")}
@@ -59,7 +63,9 @@ const TabPill = ({
     )}
   >
     {url.startsWith("liber://") ? (
-      <Logo className="my-auto size-[1.25rem]" />
+      <span>
+        <Logo className="my-auto size-[1.25rem]" />
+      </span>
     ) : (
       <FavIcon className="my-auto size-[1.25rem]" src={icons[0] ?? ""} />
     )}
