@@ -70,11 +70,17 @@ const TabPill = ({
       <FavIcon className="my-auto size-[1.25rem]" src={icons[0] ?? ""} />
     )}
     <button
-      className={clsx(
-        "grow overflow-hidden bg-transparent text-start overflow-ellipsis",
-      )}
-      disabled={active}
-      onClick={() => libernet().selectTab(index)}
+      className="grow overflow-hidden bg-transparent text-start overflow-ellipsis"
+      onClick={({ button }) => {
+        if (!active && button !== 1) {
+          libernet().selectTab(index);
+        }
+      }}
+      onMouseUp={({ button }) => {
+        if (button === 1) {
+          libernet().removeTab(index);
+        }
+      }}
     >
       {title}
     </button>
