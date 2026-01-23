@@ -20,13 +20,14 @@ jobs:
       - name: "Setup Node.js"
         uses: actions/setup-node@v6
         with:
+          node-version: latest
           architecture: x64
 
       - name: "Install Rust"
         uses: dtolnay/rust-toolchain@stable
         with:
-          target: wasm32-unknown-unknown
-          components: release
+          toolchain: stable
+          targets: wasm32-unknown-unknown
 
       - name: "Install the wasm-bindgen CLI"
         run: cargo install wasm-bindgen-cli --locked
@@ -39,6 +40,10 @@ jobs:
 
       - name: "Install Node dependencies"
         run: npm ci
+
+      - name: "Test the crypto submodule"
+        working-directory: crypto
+        run: cargo test --release
 
       - name: "Build the crypto submodule"
         working-directory: crypto
