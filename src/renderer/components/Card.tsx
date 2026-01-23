@@ -1,7 +1,7 @@
 import { clsx } from "clsx";
 import type { ComponentPropsWithoutRef } from "react";
 
-const sizes = {
+const SIZES = {
   md: "p-4",
   lg: "p-10",
 };
@@ -13,14 +13,14 @@ export const Card = ({
   children,
   ...props
 }: ComponentPropsWithoutRef<"div"> & {
-  size?: keyof typeof sizes;
+  size?: keyof typeof SIZES;
   clip?: boolean;
 }) => (
   <div
     className={clsx(
       clip && "overflow-hidden",
       "rounded-lg bg-white",
-      sizes[size],
+      SIZES[size],
       "shadow-sm",
       className,
     )}

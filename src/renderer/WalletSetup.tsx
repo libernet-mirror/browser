@@ -194,7 +194,9 @@ const SetupForm = ({ onCreate }: { onCreate: () => void }) => {
         </div>
       )}
       <PrimaryButton type="submit" className="mt-3" disabled={!canSubmit}>
-        {creationInProgress && <SpinnerIcon className="me-3 size-4" />}
+        {creationInProgress && (
+          <SpinnerIcon color="white" className="me-3 size-4" />
+        )}{" "}
         Create wallet
       </PrimaryButton>
     </form>

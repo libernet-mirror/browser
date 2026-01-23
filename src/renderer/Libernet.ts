@@ -1,16 +1,11 @@
 import {
   type AccountInfo,
+  type TabDescriptor,
   type TransactionInfo,
   type TransactionPayload,
   type TransactionQueryParams,
   type TransactionType,
 } from "../data";
-
-export interface TabDescriptor {
-  title: string;
-  url: string;
-  icons: string[];
-}
 
 export interface LibernetAPI {
   getHomePage(): Promise<string>;
@@ -19,18 +14,19 @@ export interface LibernetAPI {
   maximizeWindow(): Promise<void>;
   closeWindow(): Promise<void>;
   getTabs(): Promise<TabDescriptor[]>;
-  getActiveTabIndex(): Promise<number>;
-  selectTab(index: number): Promise<void>;
+  getActiveTabId(): Promise<number>;
+  selectTab(id: number): Promise<void>;
   addTab(): Promise<void>;
-  removeTab(index: number): Promise<void>;
+  deleteTab(id: number): Promise<void>;
   onTabs(
-    listener: (tabs: TabDescriptor[], activeIndex: number) => void,
+    listener: (tabs: TabDescriptor[], activeTabId: number) => void,
   ): () => void;
-  getUrl(): Promise<string>;
+  getUrl(tabId: number): Promise<string>;
   setUrl(url: string): Promise<void>;
-  onUrl(listener: (url: string) => void): () => void;
-  onStartNavigation(listener: () => void): () => void;
-  onFinishNavigation(listener: () => void): () => void;
+  onUrl(tabId: number, listener: (url: string) => void): () => void;
+  isTabLoading(tabId: number): Promise<boolean>;
+  onStartNavigation(tabId: number, listener: () => void): () => void;
+  onFinishNavigation(tabId: number, listener: () => void): () => void;
   navigateBack(): Promise<void>;
   navigateForward(): Promise<void>;
   startRefresh(): void;

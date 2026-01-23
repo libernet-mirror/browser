@@ -399,7 +399,10 @@ const NewTransaction = ({
               !validateAmount(amount)
             }
           >
-            {submitting && <SpinnerIcon className="me-3 size-4" />} Submit
+            {submitting && (
+              <SpinnerIcon color="white" className="me-3 size-4" />
+            )}{" "}
+            Submit
           </PrimaryButton>
         </div>
       </form>

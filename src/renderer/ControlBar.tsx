@@ -12,6 +12,7 @@ import { MinimizeIcon } from "./icons/Minimize";
 import { PlusIcon } from "./icons/Plus";
 import { RefreshIcon } from "./icons/Refresh";
 import { RightIcon } from "./icons/Right";
+import { SpinnerIcon } from "./icons/Spinner";
 import { WalletIcon } from "./icons/Wallet";
 
 import { libernet } from "./Libernet";
@@ -46,107 +47,106 @@ const FavIcon = ({
 };
 
 const TabPill = ({
-  descriptor: { title, url, icons },
-  index,
+  tab: { id, title, url, icons },
   active = false,
 }: {
-  descriptor: TabDescriptor;
-  index: number;
+  tab: TabDescriptor;
   active?: boolean;
-}) => (
-  <div
-    className={clsx(
-      "mr-1 flex w-50 min-w-15 flex-row gap-x-2 overflow-hidden rounded-md px-2 py-1 text-sm text-nowrap rtl:flex-row-reverse",
-      active
-        ? "bg-white shadow-sm"
-        : "bg-blue-100 hover:bg-blue-200 active:bg-blue-300",
-    )}
-  >
-    {url.startsWith("liber://") ? (
-      <span>
-        <Logo className="my-auto size-[1.25rem]" />
-      </span>
-    ) : (
-      <FavIcon className="my-auto size-[1.25rem]" src={icons[0] ?? ""} />
-    )}
-    <button
-      className="grow overflow-hidden bg-transparent text-start overflow-ellipsis"
-      onClick={({ button }) => {
-        if (!active && button !== 1) {
-          libernet().selectTab(index);
+}) => {
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    const destructors = [
+      libernet().onStartNavigation(id, () => setLoading(true)),
+      libernet().onFinishNavigation(id, () => setLoading(false)),
+    ];
+    (async () => setLoading(await libernet().isTabLoading(id)))();
+    return () =>
+      destructors.forEach((destructor) => {
+        try {
+          destructor();
+        } catch {
+          // ignore
         }
-      }}
-      onMouseUp={({ button }) => {
-        if (button === 1) {
-          libernet().removeTab(index);
-        }
-      }}
-    >
-      {title}
-    </button>
-    <button
-      className={clsx(
-        "my-auto rounded-full bg-transparent p-0.5",
-        active
-          ? "hover:bg-neutral-200 active:bg-neutral-300"
-          : "hover:bg-blue-300 active:bg-blue-400",
-      )}
-      onClick={() => libernet().removeTab(index)}
-    >
-      <CancelIcon className="size-3" />
-    </button>
-  </div>
-);
-
-const Tabs = () => {
-  const [tabs, setTabs] = useState<TabDescriptor[]>([]);
-  const [activeTabIndex, setActiveTabIndex] = useState(0);
-  useAsyncEffect(async () => {
-    const destructor = libernet().onTabs(
-      (tabs: TabDescriptor[], activeIndex: number) => {
-        setTabs(tabs);
-        setActiveTabIndex(activeIndex);
-      },
-    );
-    setTabs(await libernet().getTabs());
-    return destructor;
-  }, []);
+      });
+  }, [id]);
   return (
-    <div className="window-drag-area flex w-full overflow-hidden bg-blue-100 p-1 align-middle">
-      {tabs.map((tab, index) => (
-        <TabPill
-          key={index}
-          descriptor={tab}
-          index={index}
-          active={index === activeTabIndex}
-        />
-      ))}
-      <PlainButton round style="blue" onClick={() => libernet().addTab()}>
-        <PlusIcon className="size-4" />
-      </PlainButton>
-      <span className="window-drag-area grow" />
-      <PlainButton
-        round
-        style="blue"
-        onClick={() => libernet().minimizeWindow()}
+    <div
+      className={clsx(
+        "mr-1 flex w-50 min-w-15 flex-row gap-x-2 overflow-hidden rounded-md px-2 py-1 text-sm text-nowrap rtl:flex-row-reverse",
+        active
+          ? "bg-white shadow-sm"
+          : "bg-blue-100 hover:bg-blue-200 active:bg-blue-300",
+      )}
+    >
+      {loading ? (
+        <span>
+          <SpinnerIcon color="blue" className="my-auto size-[1.25rem]" />
+        </span>
+      ) : url.startsWith("liber://") ? (
+        <span>
+          <Logo className="my-auto size-[1.25rem]" />
+        </span>
+      ) : (
+        <FavIcon className="my-auto size-[1.25rem]" src={icons[0] ?? ""} />
+      )}
+      <button
+        className="grow overflow-hidden bg-transparent text-start overflow-ellipsis"
+        onClick={({ button }) => {
+          if (!active && button !== 1) {
+            libernet().selectTab(id);
+          }
+        }}
+        onMouseUp={({ button }) => {
+          if (button === 1) {
+            libernet().deleteTab(id);
+          }
+        }}
       >
-        <MinimizeIcon className="size-4" />
-      </PlainButton>
-      <PlainButton
-        round
-        style="blue"
-        onClick={() => libernet().maximizeWindow()}
+        {title}
+      </button>
+      <button
+        className={clsx(
+          "my-auto rounded-full bg-transparent p-0.5",
+          active
+            ? "hover:bg-neutral-200 active:bg-neutral-300"
+            : "hover:bg-blue-300 active:bg-blue-400",
+        )}
+        onClick={() => libernet().deleteTab(id)}
       >
-        <MaximizeIcon className="size-4" />
-      </PlainButton>
-      <PlainButton round style="blue" onClick={() => libernet().closeWindow()}>
-        <CancelIcon className="size-4" />
-      </PlainButton>
+        <CancelIcon className="size-3" />
+      </button>
     </div>
   );
 };
 
-const Navigation = () => {
+const Tabs = ({
+  tabs,
+  activeTabId,
+}: {
+  tabs: TabDescriptor[];
+  activeTabId: number;
+}) => (
+  <div className="window-drag-area flex w-full overflow-hidden bg-blue-100 p-1 align-middle">
+    {tabs.map((tab) => (
+      <TabPill key={tab.id} tab={tab} active={tab.id === activeTabId} />
+    ))}
+    <PlainButton round style="blue" onClick={() => libernet().addTab()}>
+      <PlusIcon className="size-4" />
+    </PlainButton>
+    <span className="window-drag-area grow" />
+    <PlainButton round style="blue" onClick={() => libernet().minimizeWindow()}>
+      <MinimizeIcon className="size-4" />
+    </PlainButton>
+    <PlainButton round style="blue" onClick={() => libernet().maximizeWindow()}>
+      <MaximizeIcon className="size-4" />
+    </PlainButton>
+    <PlainButton round style="blue" onClick={() => libernet().closeWindow()}>
+      <CancelIcon className="size-4" />
+    </PlainButton>
+  </div>
+);
+
+const Navigation = ({ activeTabId }: { activeTabId: number }) => {
   const [url, setUrl] = useState("");
   const [typingUrl, setTypingUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -160,14 +160,22 @@ const Navigation = () => {
 
   useEffect(() => {
     const destructors = [
-      libernet().onUrl((url: string) => {
+      libernet().onUrl(activeTabId, (url: string) => {
         setUrl(url);
         setTypingUrl(null);
       }),
-      libernet().onStartNavigation(() => setLoading(true)),
-      libernet().onFinishNavigation(() => setLoading(false)),
+      libernet().onStartNavigation(activeTabId, () => setLoading(true)),
+      libernet().onFinishNavigation(activeTabId, () => setLoading(false)),
     ];
-    return () => {
+    (async () => {
+      const [url, loading] = await Promise.all([
+        libernet().getUrl(activeTabId),
+        libernet().isTabLoading(activeTabId),
+      ]);
+      setUrl(url);
+      setLoading(loading);
+    })();
+    return () =>
       destructors.forEach((destructor) => {
         try {
           destructor();
@@ -175,12 +183,7 @@ const Navigation = () => {
           // ignore
         }
       });
-    };
-  }, []);
-
-  useAsyncEffect(async () => {
-    setUrl(await libernet().getUrl());
-  }, []);
+  }, [activeTabId]);
 
   return (
     <div className="flex w-full gap-2 overflow-hidden px-2 py-1 shadow-sm">
@@ -251,9 +254,25 @@ const Navigation = () => {
   );
 };
 
-export const ControlBar = () => (
-  <>
-    <Tabs />
-    <Navigation />
-  </>
-);
+export const ControlBar = () => {
+  const [tabs, setTabs] = useState<TabDescriptor[]>([]);
+  const [activeTabId, setActiveTabId] = useState(0);
+
+  useAsyncEffect(async () => {
+    const destructor = libernet().onTabs(
+      (tabs: TabDescriptor[], activeId: number) => {
+        setTabs(tabs);
+        setActiveTabId(activeId);
+      },
+    );
+    setTabs(await libernet().getTabs());
+    return destructor;
+  }, [tabs]);
+
+  return (
+    <>
+      <Tabs tabs={tabs} activeTabId={activeTabId} />
+      <Navigation activeTabId={activeTabId} />
+    </>
+  );
+};

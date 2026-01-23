@@ -21,6 +21,9 @@ export type TabOverrideSettings = {
 };
 
 export class Tab {
+  private static _NEXT_ID = 0;
+
+  private readonly _id = Tab._NEXT_ID++;
   private _view: WebContentsView | null = null;
   private _icons: string[] = [];
   private _accountListener: AccountListener | null = null;
@@ -59,8 +62,8 @@ export class Tab {
     private readonly _parentWindow: BaseWindow,
     private _url: string,
     private readonly _onUpdate: (descriptor: TabDescriptor) => void,
-    private readonly _onStartNavigation: () => void,
-    private readonly _onFinishNavigation: () => void,
+    private readonly _onStartNavigation: (tabId: number) => void,
+    private readonly _onFinishNavigation: (tabId: number) => void,
     private readonly _createWindow: (details: HandlerDetails) => void,
   ) {}
 
@@ -106,10 +109,10 @@ export class Tab {
         }
       })
       .on("did-start-loading", () => {
-        this._onStartNavigation();
+        this._onStartNavigation(this._id);
       })
       .on("did-stop-loading", () => {
-        this._onFinishNavigation();
+        this._onFinishNavigation(this._id);
       })
       .on("page-title-updated", () => {
         this._triggerUpdate();
@@ -193,6 +196,10 @@ export class Tab {
     return this._view;
   }
 
+  public get id(): number {
+    return this._id;
+  }
+
   public getUrl(): string {
     return this._url;
   }
@@ -223,6 +230,7 @@ export class Tab {
 
   public getDescriptor(): TabDescriptor {
     return {
+      id: this._id,
       title: this.getTitle(),
       url: this._url,
       icons: this._icons,
@@ -258,6 +266,10 @@ export class Tab {
 
   public reload(): void {
     this._getView().webContents?.reload();
+  }
+
+  public isLoading(): boolean {
+    return this._view?.webContents?.isLoadingMainFrame() || false;
   }
 
   public stopLoading(): void {

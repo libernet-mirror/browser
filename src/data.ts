@@ -2,6 +2,7 @@
 // definitions here must be runnable in both and therefore must not use Node.js stuff.
 
 export interface TabDescriptor {
+  id: number;
   title: string;
   url: string;
   icons: string[];

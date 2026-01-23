@@ -136,7 +136,7 @@ const NetworkSettings = () => {
         </label>
         <div className="text-end">
           <PrimaryButton type="submit" disabled={!dirty || saving}>
-            {saving && <SpinnerIcon className="me-3 size-4" />}
+            {saving && <SpinnerIcon color="white" className="me-3 size-4" />}{" "}
             Save
           </PrimaryButton>
         </div>

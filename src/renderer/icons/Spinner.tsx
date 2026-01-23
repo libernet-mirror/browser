@@ -1,14 +1,20 @@
 import { clsx } from "clsx";
 import { type ComponentPropsWithoutRef } from "react";
 
+const COLORS = {
+  white: "text-white",
+  blue: "text-blue-500",
+};
+
 export const SpinnerIcon = ({
   className,
+  color,
   ...props
-}: ComponentPropsWithoutRef<"svg">) => (
+}: ComponentPropsWithoutRef<"svg"> & { color: keyof typeof COLORS }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 100 101"
-    className={clsx("inline animate-spin text-white", className)}
+    className={clsx("inline animate-spin", COLORS[color], className)}
     fill="none"
     {...props}
   >

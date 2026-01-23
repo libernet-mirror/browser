@@ -37,15 +37,31 @@ export class BrowserWindow {
   private readonly _window: BaseWindow;
   private readonly _controlBar: ControlBar;
   private readonly _tabs: Tab[] = [];
-  private _currentTabIndex: number;
+  private _currentTabId: number;
+
+  private _getTabIndex(id: number): number {
+    const index = this._tabs.findIndex((tab) => tab.id === id);
+    if (index < 0) {
+      throw new Error(`tab ID ${id} not found`);
+    }
+    return index;
+  }
+
+  private _getTab(id: number): Tab {
+    return this._tabs[this._getTabIndex(id)];
+  }
+
+  private _getCurrentTab(): Tab {
+    return this._getTab(this._currentTabId);
+  }
 
   private _createTab(url: string): Tab {
     return new Tab(
       this._window,
       url,
       () => this._updateControlBar(),
-      () => this._controlBar.onStartNavigation(),
-      () => this._controlBar.onFinishNavigation(),
+      (tabId: number) => this._controlBar.onStartNavigation(tabId),
+      (tabId: number) => this._controlBar.onFinishNavigation(tabId),
       ({ url, disposition }: HandlerDetails) =>
         this._insertTab(
           this._tabs.length,
@@ -53,6 +69,17 @@ export class BrowserWindow {
           /*activate=*/ disposition !== "background-tab",
         ),
     );
+  }
+
+  private _logErrors(
+    fn: (...args: unknown[]) => void,
+    ...args: unknown[]
+  ): void {
+    try {
+      fn.call(this, ...args);
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   private constructor(tabUrls: string[], settings: BrowserWindowSettings) {
@@ -84,8 +111,8 @@ export class BrowserWindow {
     this._controlBar = new ControlBar(this._window);
 
     this._tabs = tabUrls.map((url) => this._createTab(url));
-    this._currentTabIndex = 0;
-    this._getCurrentTab().show();
+    this._currentTabId = this._tabs[0].id;
+    this._tabs[0].show();
 
     this._window
       .on("resize", () => {
@@ -113,32 +140,50 @@ export class BrowserWindow {
       }
     });
 
-    ipcMain.handle("window/close", () => this.close());
+    ipcMain.handle("window/close", () => this._logErrors(this.close));
 
     ipcMain.handle("window/get-tabs", () =>
       this._tabs.map((tab) => tab.getDescriptor()),
     );
 
-    ipcMain.handle("window/get-active-tab", () => this._currentTabIndex);
+    ipcMain.handle("window/get-active-tab", () => this._currentTabId);
 
-    ipcMain.handle("window/select-tab", (_, index: number) =>
-      this._setCurrentTab(index),
+    ipcMain.handle("window/select-tab", (_, id: number) =>
+      this._logErrors(this._setCurrentTab, id),
     );
 
-    ipcMain.handle("window/add-tab", () => this._addTab());
+    ipcMain.handle("window/add-tab", () => this._logErrors(this._addTab));
 
-    ipcMain.handle("window/remove-tab", (_, index: number) =>
-      this._destroyTabAt(index),
+    ipcMain.handle("window/delete-tab", (_, id: number) =>
+      this._logErrors(this._destroyTab, id),
     );
 
-    ipcMain.handle("root/get-url", () => this._getCurrentTab().getUrl());
-    ipcMain.handle("root/set-url", (_, url: string) => this._setUrl(url));
+    ipcMain.handle("tab/get-url", (_, tabId: number) =>
+      this._getTab(tabId).getUrl(),
+    );
 
-    ipcMain.handle("root/back", () => this._getCurrentTab().goBack());
-    ipcMain.handle("root/forward", () => this._getCurrentTab().goForward());
-    ipcMain.handle("root/refresh", () => this._getCurrentTab().reload());
+    ipcMain.handle("tab/set-url", (_, url: string) =>
+      this._logErrors(this._setUrl, url),
+    );
+
+    ipcMain.handle("tab/is-loading", (_, tabId: number) =>
+      this._getTab(tabId).isLoading(),
+    );
+
+    ipcMain.handle("root/back", () =>
+      this._logErrors(() => this._getCurrentTab().goBack()),
+    );
+
+    ipcMain.handle("root/forward", () =>
+      this._logErrors(() => this._getCurrentTab().goForward()),
+    );
+
+    ipcMain.handle("root/refresh", () =>
+      this._logErrors(() => this._getCurrentTab().reload()),
+    );
+
     ipcMain.handle("root/cancel-navigation", () =>
-      this._getCurrentTab().stopLoading(),
+      this._logErrors(() => this._getCurrentTab().stopLoading()),
     );
   }
 
@@ -153,20 +198,16 @@ export class BrowserWindow {
     return new BrowserWindow([homeAddress], { x, y, width, height, maximized });
   }
 
-  private _getCurrentTab(): Tab {
-    return this._tabs[this._currentTabIndex];
-  }
-
   private _updateControlBar(): void {
     this._controlBar.update(
       this._tabs.map((tab) => tab.getDescriptor()),
-      this._currentTabIndex,
+      this._currentTabId,
     );
   }
 
-  private _setCurrentTab(index: number): void {
+  private _setCurrentTab(id: number): void {
     this._getCurrentTab().hide();
-    this._currentTabIndex = index;
+    this._currentTabId = id;
     this._getCurrentTab().show();
     this._updateControlBar();
   }
@@ -182,13 +223,11 @@ export class BrowserWindow {
     }
     if (activate) {
       this._getCurrentTab().hide();
-      this._currentTabIndex = index;
-    } else if (this._currentTabIndex >= index) {
-      this._currentTabIndex++;
     }
-    this._tabs.splice(index, 0, this._createTab(url));
-    const tab = this._getCurrentTab();
+    const tab = this._createTab(url);
+    this._tabs.splice(index, 0, tab);
     if (activate) {
+      this._currentTabId = tab.id;
       tab.show();
     }
     this._updateControlBar();
@@ -198,8 +237,9 @@ export class BrowserWindow {
     this._insertTab(this._tabs.length, "liber://new", /*activate=*/ true);
   }
 
-  private _destroyTabAt(index: number): void {
-    this._tabs.splice(index, 1).forEach((tab) => {
+  private _destroyTab(id: number): void {
+    const currentIndex = this._getTabIndex(id);
+    this._tabs.splice(currentIndex, 1).forEach((tab) => {
       tab.hide();
       tab.free();
     });
@@ -207,11 +247,11 @@ export class BrowserWindow {
       this._window.close();
       return;
     }
-    this._currentTabIndex = Math.min(
-      this._currentTabIndex,
-      this._tabs.length - 1,
-    );
-    this._getCurrentTab().show();
+    if (this._currentTabId === id) {
+      const tab = this._tabs[Math.min(currentIndex, this._tabs.length - 1)];
+      this._currentTabId = tab.id;
+      tab.show();
+    }
     this._updateControlBar();
   }
 
@@ -229,7 +269,11 @@ export class BrowserWindow {
   public close(): void {
     this._window.close();
     for (const tab of this._tabs) {
-      tab.free();
+      try {
+        tab.free();
+      } catch {
+        // ignore
+      }
     }
   }
 }

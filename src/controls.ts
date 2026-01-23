@@ -67,16 +67,20 @@ export class ControlBar {
     return sender === this._view.webContents;
   }
 
-  public update(tabs: TabDescriptor[], activeIndex: number): void {
-    this._view.webContents.send("window/tabs", tabs, activeIndex);
-    this._view.webContents.send("root/url", tabs[activeIndex].url);
+  public update(tabs: TabDescriptor[], activeTabId: number): void {
+    this._view.webContents.send("window/tabs", tabs, activeTabId);
+    this._view.webContents.send(
+      "tab/url",
+      activeTabId,
+      tabs.find(({ id }) => id === activeTabId).url,
+    );
   }
 
-  public onStartNavigation(): void {
-    this._view.webContents.send("root/start-navigation");
+  public onStartNavigation(tabId: number): void {
+    this._view.webContents.send("tab/start-navigation", tabId);
   }
 
-  public onFinishNavigation(): void {
-    this._view.webContents.send("root/finish-navigation");
+  public onFinishNavigation(tabId: number): void {
+    this._view.webContents.send("tab/finish-navigation", tabId);
   }
 }

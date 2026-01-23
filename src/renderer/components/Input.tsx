@@ -1,13 +1,13 @@
 import { clsx } from "clsx";
 import { useMemo, useState, type ComponentPropsWithoutRef } from "react";
 
-const states = {
+const STATES = {
   valid: "border-green-500 bg-gray-50 text-gray-900",
   invalid: "border-red-500 bg-gray-50 text-gray-900",
   neutral: "border-gray-300 bg-gray-50 text-gray-900 focus:border-blue-500",
 };
 
-export type InputValidation = "valid" | "invalid" | "neutral";
+export type InputValidation = keyof typeof STATES;
 
 export const Input = ({
   type = "text",
@@ -21,7 +21,7 @@ export const Input = ({
     type={type}
     className={clsx(
       "w-full rounded-lg border-2 p-2.5 text-sm outline-none",
-      states[state],
+      STATES[state],
       className,
     )}
     {...props}
@@ -61,7 +61,7 @@ export const ValidatedInput = ({
       value={value}
       className={clsx(
         "w-full rounded-lg border-2 p-2.5 text-sm outline-none",
-        states[state],
+        STATES[state],
         className,
       )}
       onFocus={() => {
@@ -111,7 +111,7 @@ export const TextArea = ({
   <textarea
     className={clsx(
       "w-full rounded-lg border-2 p-2.5 text-sm outline-none",
-      states[state],
+      STATES[state],
       className,
     )}
     rows={rows}

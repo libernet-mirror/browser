@@ -69,7 +69,7 @@ export const Page = ({
         <div className="flex">
           <span className="grow"></span>
           <PrimaryButton type="submit" disabled={!canSubmit}>
-            {unlocking && <SpinnerIcon className="me-3 size-4" />}
+            {unlocking && <SpinnerIcon color="white" className="me-3 size-4" />}{" "}
             Unlock
           </PrimaryButton>
         </div>
