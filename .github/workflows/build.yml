@@ -77,7 +77,7 @@ jobs:
       - name: "Clone the repository"
         uses: actions/checkout@v6
         with:
-          ref: 71104-release # TODO: remove this line to fetch the main branch
+          ref: main
           submodules: recursive
 
       - name: "Install Node dependencies"
