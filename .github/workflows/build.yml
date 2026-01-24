@@ -1,0 +1,116 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  build:
+    name: "Release"
+    runs-on: ${{ matrix.runner }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # For the available architectures see
+          # https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#standard-github-hosted-runners-for-public-repositories
+
+          - os: linux
+            arch: x64
+            runner: ubuntu-latest
+          - os: linux
+            arch: arm64
+            runner: ubuntu-24.04-arm
+
+          - os: windows
+            arch: x64
+            runner: windows-latest
+
+          - os: macos
+            arch: x64
+            runner: macos-15-intel
+          - os: macos
+            arch: arm64
+            runner: macos-15
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: "Install Clang / LLVM (non-MacOS)"
+        if: runner.os != 'macOS'
+        uses: egor-tensin/setup-clang@v2
+        with:
+          version: 18
+
+      - name: Install LLVM (MacOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install llvm@18
+          echo "$(brew --prefix llvm@18)/bin" >> $GITHUB_PATH
+
+      - name: Configure WASM C compiler (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          echo "CC_wasm32_unknown_unknown=clang" >> $GITHUB_ENV
+          echo "AR_wasm32_unknown_unknown=llvm-ar" >> $GITHUB_ENV
+
+      - name: "Setup Node.js"
+        uses: actions/setup-node@v6
+        with:
+          node-version: latest
+          architecture: ${{ matrix.arch }}
+
+      - name: "Install Rust"
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: wasm32-unknown-unknown
+
+      - name: "Install the wasm-bindgen CLI"
+        # NOTE: the version of wasm-bindgen-cli must match *exactly* the version of wasm-bindgen
+        # that the crypto crate depends on.
+        run: cargo install wasm-bindgen-cli --version 0.2.103
+
+      - name: "Clone the repository"
+        uses: actions/checkout@v6
+        with:
+          ref: 71104-release # TODO: remove this line to fetch the main branch
+          submodules: recursive
+
+      - name: "Install Node dependencies"
+        run: npm ci
+
+      - name: "Test the crypto submodule"
+        working-directory: crypto
+        run: cargo test --release
+
+      - name: "Build the crypto submodule"
+        working-directory: crypto
+        run: cargo build --target wasm32-unknown-unknown --release
+
+      - name: "Generate WASM JS bindings"
+        working-directory: crypto
+        run: wasm-bindgen target/wasm32-unknown-unknown/release/crypto.wasm --out-dir ../crypto-bindings --target bundler
+
+      - name: "Package the Electron app"
+        run: npm run package
+
+      - name: "Make the Electron distributables"
+        run: npm run make
+
+      - name: "Upload the build artifacts"
+        uses: actions/upload-artifact@v4
+        with:
+          name: libernet-browser-${{ github.ref_name }}-${{ matrix.os }}-${{ matrix.arch }}
+          path: out/make/**
+          overwrite: true
+
+      - name: "Create GitHub Release"
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          generate_release_notes: true

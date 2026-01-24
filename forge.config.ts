@@ -22,12 +22,12 @@ const config: ForgeConfig = {
     new MakerZIP({}, ["darwin"]),
     new MakerRpm({
       options: {
-        icon: "images/icon.png",
+        icon: "images/logo.png",
       },
     }),
     new MakerDeb({
       options: {
-        icon: "images/icon.png",
+        icon: "images/logo.png",
       },
     }),
   ],
