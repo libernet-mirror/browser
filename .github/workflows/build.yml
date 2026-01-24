@@ -14,12 +14,26 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # For the available architectures see
+          # https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#standard-github-hosted-runners-for-public-repositories
+
           - os: linux
             arch: x64
             runner: ubuntu-latest
           - os: linux
             arch: arm64
             runner: ubuntu-24.04-arm
+
+          - os: windows
+            arch: x64
+            runner: windows-latest
+
+          - os: macos
+            arch: x64
+            runner: macos-15-intel
+          - os: macos
+            arch: arm64
+            runner: macos-15
 
     steps:
       - name: "Install Clang / LLVM"
