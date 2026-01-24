@@ -30,7 +30,9 @@ jobs:
           targets: wasm32-unknown-unknown
 
       - name: "Install the wasm-bindgen CLI"
-        run: cargo install wasm-bindgen-cli --locked
+        # NOTE: the version of wasm-bindgen-cli must match *exactly* the version of wasm-bindgen
+        # that the crypto crate depends on.
+        run: cargo install wasm-bindgen-cli --version 0.2.103
 
       - name: "Clone the repository"
         uses: actions/checkout@v6
