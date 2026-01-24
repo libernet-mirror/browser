@@ -10,18 +10,23 @@ jobs:
     name: "Release"
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        os: [linux]
+        arch: [x64, arm64]
+
     steps:
       - name: "Install Clang / LLVM"
         uses: egor-tensin/setup-clang@v2
         with:
           version: 18
-          platform: x64
+          platform: ${{matrix.arch}}
 
       - name: "Setup Node.js"
         uses: actions/setup-node@v6
         with:
           node-version: latest
-          architecture: x64
+          architecture: ${{matrix.arch}}
 
       - name: "Install Rust"
         uses: dtolnay/rust-toolchain@stable
@@ -64,4 +69,5 @@ jobs:
       - name: "Upload the build artifacts"
         uses: actions/upload-artifact@v4
         with:
+          name: libernet-browser-${{matrix.os}}-${{matrix.arch}}
           path: out/make/**
