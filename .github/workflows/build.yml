@@ -37,6 +37,7 @@ jobs:
 
     steps:
       - name: "Install Clang / LLVM"
+        if: runner.os != 'macOS'
         uses: egor-tensin/setup-clang@v2
         with:
           version: 18
