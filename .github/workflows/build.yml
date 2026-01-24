@@ -26,7 +26,6 @@ jobs:
         uses: egor-tensin/setup-clang@v2
         with:
           version: 18
-          platform: ${{matrix.arch}}
 
       - name: "Setup Node.js"
         uses: actions/setup-node@v6
