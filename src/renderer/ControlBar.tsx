@@ -77,6 +77,16 @@ const TabPill = ({
           ? "bg-white shadow-sm"
           : "bg-blue-100 hover:bg-blue-200 active:bg-blue-300",
       )}
+      onClick={({ button }) => {
+        if (!active && button !== 1) {
+          libernet().selectTab(id);
+        }
+      }}
+      onMouseUp={({ button }) => {
+        if (button === 1) {
+          libernet().deleteTab(id);
+        }
+      }}
     >
       {loading ? (
         <span>
@@ -89,21 +99,9 @@ const TabPill = ({
       ) : (
         <FavIcon className="my-auto size-[1.25rem]" src={icons[0] ?? ""} />
       )}
-      <button
-        className="grow overflow-hidden bg-transparent text-start overflow-ellipsis"
-        onClick={({ button }) => {
-          if (!active && button !== 1) {
-            libernet().selectTab(id);
-          }
-        }}
-        onMouseUp={({ button }) => {
-          if (button === 1) {
-            libernet().deleteTab(id);
-          }
-        }}
-      >
+      <span className="my-auto grow overflow-hidden bg-transparent text-start overflow-ellipsis">
         {title}
-      </button>
+      </span>
       <button
         className={clsx(
           "my-auto rounded-full bg-transparent p-0.5",
