@@ -33,6 +33,12 @@ export interface BrowserWindowSettings {
   maximized: boolean;
 }
 
+enum NewTabDisposition {
+  Activate,
+  Load,
+  Idle,
+}
+
 export class BrowserWindow {
   private readonly _window: BaseWindow;
   private readonly _controlBar: ControlBar;
@@ -66,7 +72,9 @@ export class BrowserWindow {
         this._insertTab(
           this._tabs.length,
           url,
-          /*activate=*/ disposition !== "background-tab",
+          disposition !== "background-tab"
+            ? NewTabDisposition.Activate
+            : NewTabDisposition.Load,
         ),
     );
   }
@@ -212,7 +220,11 @@ export class BrowserWindow {
     this._updateControlBar();
   }
 
-  private _insertTab(index: number, url: string, activate: boolean): void {
+  private _insertTab(
+    index: number,
+    url: string,
+    disposition: NewTabDisposition,
+  ): void {
     if (index < 0) {
       throw new Error(`invalid new tab index ${index}`);
     }
@@ -221,20 +233,29 @@ export class BrowserWindow {
         `invalid new tab index ${index}, must be less than or equal to ${this._tabs.length}`,
       );
     }
-    if (activate) {
+    if (disposition === NewTabDisposition.Activate) {
       this._getCurrentTab().hide();
     }
     const tab = this._createTab(url);
     this._tabs.splice(index, 0, tab);
-    if (activate) {
-      this._currentTabId = tab.id;
-      tab.show();
+    switch (disposition) {
+      case NewTabDisposition.Activate:
+        this._currentTabId = tab.id;
+        tab.show();
+        break;
+      case NewTabDisposition.Load:
+        tab.ensureLoaded();
+        break;
     }
     this._updateControlBar();
   }
 
   private _addTab(): void {
-    this._insertTab(this._tabs.length, "liber://new", /*activate=*/ true);
+    this._insertTab(
+      this._tabs.length,
+      "liber://new",
+      NewTabDisposition.Activate,
+    );
   }
 
   private _destroyTab(id: number): void {

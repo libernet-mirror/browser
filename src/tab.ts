@@ -248,6 +248,10 @@ export class Tab {
     }
   }
 
+  public ensureLoaded(): void {
+    this._getView(/*resize=*/ true);
+  }
+
   public matches(sender: WebContents): boolean {
     return sender === this._view.webContents;
   }
