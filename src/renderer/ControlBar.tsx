@@ -177,7 +177,6 @@ const Navigation = ({ activeTabId }: { activeTabId: number }) => {
       libernet().onUrl(activeTabId, (url: string) => {
         if (!cancelled) {
           setUrl(url);
-          setTypingUrl(null);
         }
       }),
       libernet().onStartNavigation(activeTabId, () => {
@@ -198,6 +197,7 @@ const Navigation = ({ activeTabId }: { activeTabId: number }) => {
       ]);
       if (!cancelled) {
         setUrl(url);
+        setTypingUrl(null);
         setLoading(loading);
       }
     })();
@@ -298,8 +298,8 @@ export const ControlBar = () => {
     );
     (async () => {
       const [tabs, activeTabId] = await Promise.all([
-        await libernet().getTabs(),
-        await libernet().getActiveTabId(),
+        libernet().getTabs(),
+        libernet().getActiveTabId(),
       ]);
       if (!cancelled) {
         setTabs(tabs);
