@@ -28,10 +28,10 @@ export class ControlBar {
     .replace(/\s+/g, " ")
     .trim();
 
-  private readonly _view: WebContentsView;
+  private _view: WebContentsView;
 
-  public constructor(private readonly _parentWindow: BaseWindow) {
-    this._view = new WebContentsView({
+  private _createView(): WebContentsView {
+    const view = new WebContentsView({
       webPreferences: {
         contextIsolation: true,
         partition: "control-bar",
@@ -39,7 +39,13 @@ export class ControlBar {
         preload: PRELOAD_WEBPACK_ENTRY,
       },
     });
-    this._view.webContents.session.webRequest.onHeadersReceived(
+    view.webContents.on("render-process-gone", (_, details) => {
+      console.dir(details);
+      console.error("The control bar crashed. Restarting...");
+      this._view?.webContents?.close();
+      this._view = this._createView();
+    });
+    view.webContents.session.webRequest.onHeadersReceived(
       (details, callback) => {
         callback({
           responseHeaders: {
@@ -51,11 +57,16 @@ export class ControlBar {
         });
       },
     );
-    this._view.setBackgroundColor("#0fff");
+    view.setBackgroundColor("#0fff");
     const { width } = this._parentWindow.getBounds();
-    this._view.setBounds({ x: 0, y: 0, width, height: CONTROL_BAR_HEIGHT });
-    this._parentWindow.contentView.addChildView(this._view);
-    this._view.webContents.loadURL(WEBPACK_ENTRY + "?route=control");
+    view.setBounds({ x: 0, y: 0, width, height: CONTROL_BAR_HEIGHT });
+    this._parentWindow.contentView.addChildView(view);
+    view.webContents.loadURL(WEBPACK_ENTRY + "?route=control");
+    return view;
+  }
+
+  public constructor(private readonly _parentWindow: BaseWindow) {
+    this._view = this._createView();
   }
 
   public resize(): void {
