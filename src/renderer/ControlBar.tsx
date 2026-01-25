@@ -17,7 +17,6 @@ import { WalletIcon } from "./icons/Wallet";
 
 import { libernet } from "./Libernet";
 import { GrayedLogo, Logo } from "./Logo";
-import { useAsyncEffect } from "./Utilities";
 
 const FavIcon = ({
   src,
@@ -55,12 +54,27 @@ const TabPill = ({
 }) => {
   const [loading, setLoading] = useState(false);
   useEffect(() => {
+    let cancelled = false;
     const destructors = [
-      libernet().onStartNavigation(id, () => setLoading(true)),
-      libernet().onFinishNavigation(id, () => setLoading(false)),
+      libernet().onStartNavigation(id, () => {
+        if (!cancelled) {
+          setLoading(true);
+        }
+      }),
+      libernet().onFinishNavigation(id, () => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }),
     ];
-    (async () => setLoading(await libernet().isTabLoading(id)))();
-    return () =>
+    (async () => {
+      const loading = await libernet().isTabLoading(id);
+      if (!cancelled) {
+        setLoading(loading);
+      }
+    })();
+    return () => {
+      cancelled = true;
       destructors.forEach((destructor) => {
         try {
           destructor();
@@ -68,6 +82,7 @@ const TabPill = ({
           // ignore
         }
       });
+    };
   }, [id]);
   return (
     <div
@@ -77,6 +92,16 @@ const TabPill = ({
           ? "bg-white shadow-sm"
           : "bg-blue-100 hover:bg-blue-200 active:bg-blue-300",
       )}
+      onClick={({ button }) => {
+        if (!active && button !== 1) {
+          libernet().selectTab(id);
+        }
+      }}
+      onMouseUp={({ button }) => {
+        if (button === 1) {
+          libernet().deleteTab(id);
+        }
+      }}
     >
       {loading ? (
         <span>
@@ -89,21 +114,9 @@ const TabPill = ({
       ) : (
         <FavIcon className="my-auto size-[1.25rem]" src={icons[0] ?? ""} />
       )}
-      <button
-        className="grow overflow-hidden bg-transparent text-start overflow-ellipsis"
-        onClick={({ button }) => {
-          if (!active && button !== 1) {
-            libernet().selectTab(id);
-          }
-        }}
-        onMouseUp={({ button }) => {
-          if (button === 1) {
-            libernet().deleteTab(id);
-          }
-        }}
-      >
+      <span className="my-auto grow overflow-hidden bg-transparent text-start overflow-ellipsis">
         {title}
-      </button>
+      </span>
       <button
         className={clsx(
           "my-auto rounded-full bg-transparent p-0.5",
@@ -159,23 +172,37 @@ const Navigation = ({ activeTabId }: { activeTabId: number }) => {
   const isSystemPage = useMemo(() => url.startsWith("liber://"), [url]);
 
   useEffect(() => {
+    let cancelled = false;
     const destructors = [
       libernet().onUrl(activeTabId, (url: string) => {
-        setUrl(url);
-        setTypingUrl(null);
+        if (!cancelled) {
+          setUrl(url);
+        }
       }),
-      libernet().onStartNavigation(activeTabId, () => setLoading(true)),
-      libernet().onFinishNavigation(activeTabId, () => setLoading(false)),
+      libernet().onStartNavigation(activeTabId, () => {
+        if (!cancelled) {
+          setLoading(true);
+        }
+      }),
+      libernet().onFinishNavigation(activeTabId, () => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }),
     ];
     (async () => {
       const [url, loading] = await Promise.all([
         libernet().getUrl(activeTabId),
         libernet().isTabLoading(activeTabId),
       ]);
-      setUrl(url);
-      setLoading(loading);
+      if (!cancelled) {
+        setUrl(url);
+        setTypingUrl(null);
+        setLoading(loading);
+      }
     })();
-    return () =>
+    return () => {
+      cancelled = true;
       destructors.forEach((destructor) => {
         try {
           destructor();
@@ -183,6 +210,7 @@ const Navigation = ({ activeTabId }: { activeTabId: number }) => {
           // ignore
         }
       });
+    };
   }, [activeTabId]);
 
   return (
@@ -258,16 +286,31 @@ export const ControlBar = () => {
   const [tabs, setTabs] = useState<TabDescriptor[]>([]);
   const [activeTabId, setActiveTabId] = useState(0);
 
-  useAsyncEffect(async () => {
+  useEffect(() => {
+    let cancelled = false;
     const destructor = libernet().onTabs(
       (tabs: TabDescriptor[], activeId: number) => {
-        setTabs(tabs);
-        setActiveTabId(activeId);
+        if (!cancelled) {
+          setTabs(tabs);
+          setActiveTabId(activeId);
+        }
       },
     );
-    setTabs(await libernet().getTabs());
-    return destructor;
-  }, [tabs]);
+    (async () => {
+      const [tabs, activeTabId] = await Promise.all([
+        libernet().getTabs(),
+        libernet().getActiveTabId(),
+      ]);
+      if (!cancelled) {
+        setTabs(tabs);
+        setActiveTabId(activeTabId);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      destructor();
+    };
+  }, []);
 
   return (
     <>

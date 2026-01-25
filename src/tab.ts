@@ -1,3 +1,5 @@
+import path from "node:path";
+
 import {
   BaseWindow,
   HandlerDetails,
@@ -20,6 +22,15 @@ export type TabOverrideSettings = {
   partition?: string;
 };
 
+function _normalizeFileUrl(url: string): string {
+  const match = url.match(/^file:\/\/([^?]*)(\?|$)/);
+  if (match) {
+    return "file://" + path.normalize(match[1]);
+  } else {
+    return url;
+  }
+}
+
 export class Tab {
   private static _NEXT_ID = 0;
 
@@ -30,11 +41,13 @@ export class Tab {
 
   // REQUIRES: `url` must be valid and must include the protocol part.
   private static _mapSystemUrlToUserUrl(url: string): string {
-    if (!url.startsWith(WEBPACK_ENTRY)) {
+    url = _normalizeFileUrl(url);
+    const webpack_entry = _normalizeFileUrl(WEBPACK_ENTRY);
+    if (!url.startsWith(webpack_entry)) {
       return url;
     }
     const params = url
-      .slice(WEBPACK_ENTRY.length)
+      .slice(webpack_entry.length)
       .replace(/^\?/, "")
       .replace(/#.*$/, "")
       .split("&")
@@ -246,6 +259,10 @@ export class Tab {
     if (this._view) {
       this._parentWindow.contentView.removeChildView(this._view);
     }
+  }
+
+  public ensureLoaded(): void {
+    this._getView(/*resize=*/ true);
   }
 
   public matches(sender: WebContents): boolean {

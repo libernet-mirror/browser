@@ -51,10 +51,24 @@ async function updateConfig(update: Config): Promise<void> {
     } catch (e) {
       console.error(e);
     }
-    if (update.homeAddress) {
-      config.homeAddress = update.homeAddress;
-    }
-    // TODO: update fields recursively.
+    (function merge(
+      lhs: { [key: string]: never },
+      rhs: { [key: string]: never },
+    ): void {
+      for (const key in rhs) {
+        if (Object.prototype.hasOwnProperty.call(rhs, key)) {
+          const value = rhs[key];
+          if (typeof value !== "object" || !value || Array.isArray(value)) {
+            lhs[key] = value;
+          } else {
+            if (typeof lhs[key] !== "object") {
+              lhs[key] = {} as never;
+            }
+            merge(lhs[key], value);
+          }
+        }
+      }
+    })(config as never, update as never);
     await fs.writeFile(filePath, JSON.stringify(config, null, 2));
   });
 }
