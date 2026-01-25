@@ -124,7 +124,10 @@ const TabPill = ({
             ? "hover:bg-neutral-200 active:bg-neutral-300"
             : "hover:bg-blue-300 active:bg-blue-400",
         )}
-        onClick={() => libernet().deleteTab(id)}
+        onClick={(e) => {
+          e.stopPropagation();
+          libernet().deleteTab(id);
+        }}
       >
         <CancelIcon className="size-3" />
       </button>
