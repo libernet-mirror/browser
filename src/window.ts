@@ -43,7 +43,7 @@ export class BrowserWindow {
   private readonly _window: BaseWindow;
   private readonly _controlBar: ControlBar;
   private readonly _tabs: Tab[] = [];
-  private _currentTabId: number;
+  private _currentTabIndex: number;
 
   private _getTabIndex(id: number): number {
     const index = this._tabs.findIndex((tab) => tab.id === id);
@@ -58,7 +58,7 @@ export class BrowserWindow {
   }
 
   private _getCurrentTab(): Tab {
-    return this._getTab(this._currentTabId);
+    return this._tabs[this._currentTabIndex];
   }
 
   private _createTab(url: string): Tab {
@@ -119,8 +119,8 @@ export class BrowserWindow {
     this._controlBar = new ControlBar(this._window);
 
     this._tabs = tabUrls.map((url) => this._createTab(url));
-    this._currentTabId = this._tabs[0].id;
-    this._tabs[0].show();
+    this._currentTabIndex = 0;
+    this._tabs[this._currentTabIndex].show();
 
     this._window
       .on("resize", () => {
@@ -154,7 +154,10 @@ export class BrowserWindow {
       this._tabs.map((tab) => tab.getDescriptor()),
     );
 
-    ipcMain.handle("window/get-active-tab", () => this._currentTabId);
+    ipcMain.handle(
+      "window/get-active-tab",
+      () => this._tabs[this._currentTabIndex].id,
+    );
 
     ipcMain.handle("window/select-tab", (_, id: number) =>
       this._logErrors(this._setCurrentTab, id),
@@ -209,13 +212,14 @@ export class BrowserWindow {
   private _updateControlBar(): void {
     this._controlBar.update(
       this._tabs.map((tab) => tab.getDescriptor()),
-      this._currentTabId,
+      this._tabs[this._currentTabIndex].id,
     );
   }
 
   private _setCurrentTab(id: number): void {
+    const index = this._getTabIndex(id);
     this._getCurrentTab().hide();
-    this._currentTabId = id;
+    this._currentTabIndex = index;
     this._getCurrentTab().show();
     this._updateControlBar();
   }
@@ -240,7 +244,7 @@ export class BrowserWindow {
     this._tabs.splice(index, 0, tab);
     switch (disposition) {
       case NewTabDisposition.Activate:
-        this._currentTabId = tab.id;
+        this._currentTabIndex = index;
         tab.show();
         break;
       case NewTabDisposition.Load:
@@ -259,8 +263,8 @@ export class BrowserWindow {
   }
 
   private _destroyTab(id: number): void {
-    const currentIndex = this._getTabIndex(id);
-    this._tabs.splice(currentIndex, 1).forEach((tab) => {
+    const index = this._getTabIndex(id);
+    this._tabs.splice(index, 1).forEach((tab) => {
       tab.hide();
       tab.free();
     });
@@ -268,11 +272,15 @@ export class BrowserWindow {
       this._window.close();
       return;
     }
-    if (this._currentTabId === id) {
-      const tab = this._tabs[Math.min(currentIndex, this._tabs.length - 1)];
-      this._currentTabId = tab.id;
-      tab.show();
+    if (this._currentTabIndex > index) {
+      this._currentTabIndex--;
+    } else if (this._currentTabIndex === index) {
+      this._currentTabIndex = Math.min(
+        this._currentTabIndex,
+        this._tabs.length - 1,
+      );
     }
+    this._tabs[this._currentTabIndex].show();
     this._updateControlBar();
   }
 
