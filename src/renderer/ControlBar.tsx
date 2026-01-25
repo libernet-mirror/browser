@@ -17,7 +17,6 @@ import { WalletIcon } from "./icons/Wallet";
 
 import { libernet } from "./Libernet";
 import { GrayedLogo, Logo } from "./Logo";
-import { useAsyncEffect } from "./Utilities";
 
 const FavIcon = ({
   src,
@@ -55,12 +54,27 @@ const TabPill = ({
 }) => {
   const [loading, setLoading] = useState(false);
   useEffect(() => {
+    let cancelled = false;
     const destructors = [
-      libernet().onStartNavigation(id, () => setLoading(true)),
-      libernet().onFinishNavigation(id, () => setLoading(false)),
+      libernet().onStartNavigation(id, () => {
+        if (!cancelled) {
+          setLoading(true);
+        }
+      }),
+      libernet().onFinishNavigation(id, () => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }),
     ];
-    (async () => setLoading(await libernet().isTabLoading(id)))();
-    return () =>
+    (async () => {
+      const loading = await libernet().isTabLoading(id);
+      if (!cancelled) {
+        setLoading(loading);
+      }
+    })();
+    return () => {
+      cancelled = true;
       destructors.forEach((destructor) => {
         try {
           destructor();
@@ -68,6 +82,7 @@ const TabPill = ({
           // ignore
         }
       });
+    };
   }, [id]);
   return (
     <div
@@ -157,23 +172,37 @@ const Navigation = ({ activeTabId }: { activeTabId: number }) => {
   const isSystemPage = useMemo(() => url.startsWith("liber://"), [url]);
 
   useEffect(() => {
+    let cancelled = false;
     const destructors = [
       libernet().onUrl(activeTabId, (url: string) => {
-        setUrl(url);
-        setTypingUrl(null);
+        if (!cancelled) {
+          setUrl(url);
+          setTypingUrl(null);
+        }
       }),
-      libernet().onStartNavigation(activeTabId, () => setLoading(true)),
-      libernet().onFinishNavigation(activeTabId, () => setLoading(false)),
+      libernet().onStartNavigation(activeTabId, () => {
+        if (!cancelled) {
+          setLoading(true);
+        }
+      }),
+      libernet().onFinishNavigation(activeTabId, () => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }),
     ];
     (async () => {
       const [url, loading] = await Promise.all([
         libernet().getUrl(activeTabId),
         libernet().isTabLoading(activeTabId),
       ]);
-      setUrl(url);
-      setLoading(loading);
+      if (!cancelled) {
+        setUrl(url);
+        setLoading(loading);
+      }
     })();
-    return () =>
+    return () => {
+      cancelled = true;
       destructors.forEach((destructor) => {
         try {
           destructor();
@@ -181,6 +210,7 @@ const Navigation = ({ activeTabId }: { activeTabId: number }) => {
           // ignore
         }
       });
+    };
   }, [activeTabId]);
 
   return (
@@ -256,16 +286,31 @@ export const ControlBar = () => {
   const [tabs, setTabs] = useState<TabDescriptor[]>([]);
   const [activeTabId, setActiveTabId] = useState(0);
 
-  useAsyncEffect(async () => {
+  useEffect(() => {
+    let cancelled = false;
     const destructor = libernet().onTabs(
       (tabs: TabDescriptor[], activeId: number) => {
-        setTabs(tabs);
-        setActiveTabId(activeId);
+        if (!cancelled) {
+          setTabs(tabs);
+          setActiveTabId(activeId);
+        }
       },
     );
-    setTabs(await libernet().getTabs());
-    return destructor;
-  }, [tabs]);
+    (async () => {
+      const [tabs, activeTabId] = await Promise.all([
+        await libernet().getTabs(),
+        await libernet().getActiveTabId(),
+      ]);
+      if (!cancelled) {
+        setTabs(tabs);
+        setActiveTabId(activeTabId);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      destructor();
+    };
+  }, []);
 
   return (
     <>
