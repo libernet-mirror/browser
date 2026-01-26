@@ -23,9 +23,9 @@ export type TabOverrideSettings = {
 };
 
 function _normalizeFileUrl(url: string): string {
-  const match = url.match(/^file:\/\/([^?]*)(\?|$)/);
+  const match = url.match(/^file:\/\/([^?#&]*)([?#&].*)?$/);
   if (match) {
-    return "file://" + path.normalize(match[1]);
+    return `file://${path.normalize(match[1])}${match[2]}`;
   } else {
     return url;
   }
