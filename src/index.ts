@@ -20,6 +20,8 @@ import {
 } from "./libernet";
 import { BrowserWindow } from "./window";
 
+console.log(`LiberBrowser v${app.getVersion()}`);
+
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require("electron-squirrel-startup")) {
   app.quit();
