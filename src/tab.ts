@@ -23,9 +23,9 @@ export type TabOverrideSettings = {
 };
 
 function _normalizeFileUrl(url: string): string {
-  const match = url.match(/^file:\/\/([^?]*)(\?|$)/);
+  const match = url.match(/^file:\/\/([^?#&]*)([?#&].*)?$/);
   if (match) {
-    return "file://" + path.normalize(match[1]);
+    return `file://${path.normalize(match[1])}${match[2]}`;
   } else {
     return url;
   }
@@ -58,6 +58,10 @@ export class Tab {
       return `liber://${params[0]}`;
     } else {
       // This should never happen.
+      console.log(`unrecognized system URL: ${JSON.stringify(url)}`);
+      console.log(
+        `normalized Webpack entry URL is: ${JSON.stringify(webpack_entry)}`,
+      );
       return "liber:///";
     }
   }
