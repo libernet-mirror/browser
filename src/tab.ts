@@ -58,6 +58,10 @@ export class Tab {
       return `liber://${params[0]}`;
     } else {
       // This should never happen.
+      console.log(`unrecognized system URL: ${JSON.stringify(url)}`);
+      console.log(
+        `normalized Webpack entry URL is: ${JSON.stringify(webpack_entry)}`,
+      );
       return "liber:///";
     }
   }
