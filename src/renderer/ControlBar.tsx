@@ -164,12 +164,12 @@ const Tabs = ({
 
 const Navigation = ({ activeTabId }: { activeTabId: number }) => {
   const [url, setUrl] = useState("");
-  const [typingUrl, setTypingUrl] = useState<string | null>(null);
+  const [urlOverride, setUrlOverride] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const shownUrl = useMemo(
-    () => (typingUrl !== null ? typingUrl : url),
-    [url, typingUrl],
+    () => (urlOverride !== null ? urlOverride : url),
+    [url, urlOverride],
   );
 
   const isSystemPage = useMemo(() => url.startsWith("liber://"), [url]);
@@ -180,6 +180,7 @@ const Navigation = ({ activeTabId }: { activeTabId: number }) => {
       libernet().onUrl(activeTabId, (url: string) => {
         if (!cancelled) {
           setUrl(url);
+          setUrlOverride(null);
         }
       }),
       libernet().onStartNavigation(activeTabId, () => {
@@ -200,7 +201,7 @@ const Navigation = ({ activeTabId }: { activeTabId: number }) => {
       ]);
       if (!cancelled) {
         setUrl(url);
-        setTypingUrl(null);
+        setUrlOverride(null);
         setLoading(loading);
       }
     })();
@@ -252,8 +253,9 @@ const Navigation = ({ activeTabId }: { activeTabId: number }) => {
         <form
           onSubmit={async (e) => {
             e.preventDefault();
-            await libernet().setUrl(typingUrl.trim());
-            setTypingUrl(null);
+            const newUrl = urlOverride.trim();
+            setUrlOverride(newUrl);
+            await libernet().setUrl(newUrl);
           }}
         >
           <input
@@ -261,10 +263,10 @@ const Navigation = ({ activeTabId }: { activeTabId: number }) => {
             className="w-full rounded-md border-2 border-neutral-100 bg-neutral-100 px-3 py-1 outline-none focus:border-blue-600 focus:bg-white"
             placeholder="Type a URL"
             value={shownUrl}
-            onChange={({ target }) => setTypingUrl(target.value)}
+            onChange={({ target }) => setUrlOverride(target.value)}
             onFocus={({ target }) => {
               target.setSelectionRange(0, target.value.length);
-              setTypingUrl(url);
+              setUrlOverride(url);
             }}
             onBlur={({ target }) => {
               target.setSelectionRange(null, null);
