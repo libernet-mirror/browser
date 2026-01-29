@@ -16,18 +16,25 @@ import type {
   TernaryMerkleProof,
 } from "../crypto-bindings/crypto";
 
+import type { Any as AnyProto } from "./proto/google/protobuf/Any";
 import type { AccountInfo as AccountInfoProto } from "./proto/libernet/AccountInfo";
 import type { AccountSubscriptionResponse } from "./proto/libernet/AccountSubscriptionResponse";
 import type { BlockDescriptor as BlockDescriptorProto } from "./proto/libernet/BlockDescriptor";
 import type { GetAccountResponse } from "./proto/libernet/GetAccountResponse";
 import type { GetTransactionResponse } from "./proto/libernet/GetTransactionResponse";
 import type { MerkleProof as MerkleProofProto } from "./proto/libernet/MerkleProof";
+import type {
+  _libernet_NodeIdentity_Payload as NodeIdentityPayload,
+  NodeIdentity as NodeIdentityProto,
+} from "./proto/libernet/NodeIdentity";
 import type { QueryTransactionsResponse } from "./proto/libernet/QueryTransactionsResponse";
+import type { Signature as SignatureProto } from "./proto/libernet/Signature";
 import type {
   Transaction as TransactionProto,
   _libernet_Transaction_Payload as TransactionPayloadProto,
 } from "./proto/libernet/Transaction";
 
+import { PROTOCOL_VERSION } from "./constants";
 import {
   createBinaryMerkleProof32,
   createRemoteAccount,
@@ -38,6 +45,9 @@ import {
   AccountInfo,
   BlockDescriptor,
   CoinTransferTransactionPayload,
+  GeographicalLocation,
+  NodeIdentity,
+  ProtocolVersion,
   TransactionInfo,
   TransactionPayload,
   TransactionQueryParams,
@@ -49,8 +59,10 @@ import {
   decodeBigInt,
   decodeLong,
   decodePointG1,
+  decodePointG2,
   decodeScalar,
   decodeTimestamp,
+  encodeAnyCanonical,
   encodeBigInt,
   encodeMessageCanonical,
   encodePointG1,
@@ -133,6 +145,77 @@ export class Libernet {
     );
   }
 
+  private async _verifySignedMessage<T>(
+    payload: AnyProto | null,
+    signature: SignatureProto | null,
+    expectedSigner: string | null,
+  ): Promise<T> {
+    if (!payload) {
+      throw new Error("received an invalid signed message");
+    }
+    if (!signature) {
+      throw new Error("received an invalid signature");
+    }
+    const remoteAccount = await createRemoteAccount(
+      decodePointG1(signature.publicKey),
+    );
+    if (remoteAccount.address() !== decodeScalar(signature.signer)) {
+      throw new Error("received an invalid signature");
+    }
+    if (expectedSigner && remoteAccount.address() !== expectedSigner) {
+      throw new Error("received an invalid signature");
+    }
+    this._proxy.remoteAccount.bls_verify(
+      encodeAnyCanonical(payload),
+      decodePointG2(signature.signature),
+    );
+    return unpackAny<T>(payload);
+  }
+
+  private async _decodeNodeIdentity(
+    identity: NodeIdentityProto,
+  ): Promise<NodeIdentity> {
+    const payload = await this._verifySignedMessage<NodeIdentityPayload>(
+      identity.payload,
+      identity.signature,
+      this._proxy.remoteAccount.address(),
+    );
+    if (!payload.accountAddress) {
+      throw new Error("invalid node identity: missing account address");
+    }
+    return new NodeIdentity(
+      new ProtocolVersion(
+        payload.protocolVersion.major ?? 0,
+        payload.protocolVersion.minor ?? 0,
+        payload.protocolVersion.build ?? 0,
+      ),
+      decodeLong(payload.chainId),
+      decodeScalar(payload.accountAddress),
+      new GeographicalLocation(
+        payload.location.latitude ?? 0,
+        payload.location.longitude ?? 0,
+      ),
+      payload.networkAddress ?? "",
+      payload.grpcPort,
+      decodeTimestamp(payload.timestamp),
+    );
+  }
+
+  private async _getPeerIdentity(): Promise<NodeIdentity> {
+    return new Promise((resolve, reject) => {
+      this._client.getIdentity(
+        {},
+        (error: unknown, response: NodeIdentityProto) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(this._decodeNodeIdentity(response));
+          }
+        },
+      );
+    });
+  }
+
   public static async create(account: Account): Promise<Libernet> {
     const target =
       Libernet._bootstrapNodes[
@@ -143,7 +226,24 @@ export class Libernet {
       Libernet._getUnixSocketPath(target),
       target,
     );
-    return new Libernet(account, proxy);
+    const libernet = new Libernet(account, proxy);
+    try {
+      const peerIdentity = await libernet._getPeerIdentity();
+      if (peerIdentity.chainId !== CHAIN_ID) {
+        throw new Error(
+          `the node at ${target} runs on a different network (id=${peerIdentity.chainId})`,
+        );
+      }
+      if (!peerIdentity.protocolVersion.isInteroperableWith(PROTOCOL_VERSION)) {
+        throw new Error(
+          `the node at ${target} uses an incompatible protocol version (they have ${peerIdentity.protocolVersion}, we have ${PROTOCOL_VERSION})`,
+        );
+      }
+    } catch (e) {
+      libernet.destroy();
+      throw e;
+    }
+    return libernet;
   }
 
   private static async _decodeBlockDescriptor(
@@ -271,10 +371,14 @@ export class Libernet {
     transactionProto: TransactionProto,
     validate: boolean,
   ): Promise<TransactionInfo> {
-    const signerAddress = decodeScalar(transactionProto.signature.signer);
+    const { signature } = transactionProto;
+    if (!signature) {
+      throw new Error("invalid transaction signature");
+    }
+    const signerAddress = decodeScalar(signature.signer);
     if (validate) {
       const signer = await createRemoteAccount(
-        decodePointG1(transactionProto.signature.publicKey),
+        decodePointG1(signature.publicKey),
       );
       if (signer.address() !== signerAddress) {
         throw new Error("invalid transaction signature");

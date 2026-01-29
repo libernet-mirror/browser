@@ -15,6 +15,10 @@ export class ProtocolVersion {
     public readonly build: number,
   ) {}
 
+  public toString(): string {
+    return `${this.major}.${this.minor}.${this.build}`;
+  }
+
   public isIncompatibleWith(other: ProtocolVersion): boolean {
     if (this.major > 0) {
       return other.major !== this.major;
@@ -36,6 +40,25 @@ export class ProtocolVersion {
       return other.major < 1 && other.minor === this.minor;
     }
   }
+}
+
+export class GeographicalLocation {
+  public constructor(
+    public readonly latitude: number,
+    public readonly longitude: number,
+  ) {}
+}
+
+export class NodeIdentity {
+  public constructor(
+    public readonly protocolVersion: ProtocolVersion,
+    public readonly chainId: number,
+    public readonly accountAddress: string,
+    public readonly location: GeographicalLocation,
+    public readonly networkAddress: string,
+    public readonly grpcPort: number,
+    public readonly timestamp: Date,
+  ) {}
 }
 
 export class BlockDescriptor {

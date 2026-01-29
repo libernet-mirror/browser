@@ -4,7 +4,7 @@ import * as fs from "node:fs/promises";
 import * as net from "node:net";
 import * as tls from "node:tls";
 
-import type { Account } from "../crypto-bindings/crypto";
+import type { Account, RemoteAccount } from "../crypto-bindings/crypto";
 import { derToPem } from "./utilities";
 
 export class Proxy {
@@ -13,6 +13,7 @@ export class Proxy {
 
   private _localSocket: net.Socket | null = null;
   private _tlsSocket: tls.TLSSocket | null = null;
+  private _remoteAccount: RemoteAccount | null = null;
 
   private constructor(
     private readonly _account: Account, // not owned -- don't free
@@ -57,13 +58,13 @@ export class Proxy {
       this._tlsSocket.once("secureConnect", () => {
         try {
           const peerCertificate = this._tlsSocket.getPeerCertificate(true);
-          const remote = this._account.verify_ssl_certificate(
+          this._remoteAccount = this._account.verify_ssl_certificate(
             derToPem(peerCertificate.raw, "CERTIFICATE"),
             BigInt(Date.now()),
             this._remoteHost,
           );
           console.log(
-            `connected to ${remote.address()}\n          as ${this._account.address()}`,
+            `connected to ${this._remoteAccount.address()}\n          as ${this._account.address()}`,
           );
 
           this._localSocket.resume();
@@ -71,6 +72,11 @@ export class Proxy {
           this._tlsSocket.pipe(this._localSocket);
         } catch (error) {
           console.error(error);
+          try {
+            this._remoteAccount?.free();
+          } catch {
+            // ignore
+          }
           try {
             this._tlsSocket.destroy();
           } catch {
@@ -132,6 +138,10 @@ export class Proxy {
     return this._remotePort;
   }
 
+  public get remoteAccount(): RemoteAccount {
+    return this._remoteAccount;
+  }
+
   private _closeServer(): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this._listening) {
@@ -158,11 +168,8 @@ export class Proxy {
     if (this._server) {
       await this._closeAndUnlink().catch(() => {});
     }
-    if (this._tlsSocket) {
-      this._tlsSocket.destroy();
-    }
-    if (this._localSocket) {
-      this._localSocket.destroy();
-    }
+    this._remoteAccount?.free();
+    this._tlsSocket?.destroy();
+    this._localSocket?.destroy();
   }
 }
