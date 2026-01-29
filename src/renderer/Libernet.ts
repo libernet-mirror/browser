@@ -31,6 +31,8 @@ export interface LibernetAPI {
   navigateForward(): Promise<void>;
   startRefresh(): void;
   cancelNavigation(): void;
+  getNetworkId(): Promise<number>;
+  setNetworkId(id: number): Promise<void>;
   getNodeList(): Promise<string[]>;
   setNodeList(nodes: string[]): Promise<void>;
   getWalletStatus(): Promise<"none" | "stored" | "loaded">;

@@ -13,6 +13,7 @@ interface Config {
     maximized?: boolean;
   };
   homeAddress?: string;
+  networkId?: number;
 }
 
 const DEFAULT_WINDOW_X: number | null = null;
@@ -20,7 +21,10 @@ const DEFAULT_WINDOW_Y: number | null = null;
 const DEFAULT_WINDOW_WIDTH = 800;
 const DEFAULT_WINDOW_HEIGHT = 600;
 const DEFAULT_WINDOW_MAXIMIZED = false;
+
 const DEFAULT_HOME_ADDRESS = "https://www.google.com/";
+
+const DEFAULT_NETWORK_ID = 1337;
 
 const configFileMutex = new Mutex();
 
@@ -120,4 +124,12 @@ export async function saveWindowSize(
   height: number,
 ): Promise<void> {
   await updateConfig({ window: { width, height } });
+}
+
+export async function getNetworkId(): Promise<number> {
+  return (await readConfig()).networkId ?? DEFAULT_NETWORK_ID;
+}
+
+export async function saveNetworkId(networkId: number): Promise<void> {
+  await updateConfig({ networkId });
 }

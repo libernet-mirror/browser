@@ -16,18 +16,26 @@ import type {
   TernaryMerkleProof,
 } from "../crypto-bindings/crypto";
 
+import type { Any as AnyProto } from "./proto/google/protobuf/Any";
 import type { AccountInfo as AccountInfoProto } from "./proto/libernet/AccountInfo";
 import type { AccountSubscriptionResponse } from "./proto/libernet/AccountSubscriptionResponse";
 import type { BlockDescriptor as BlockDescriptorProto } from "./proto/libernet/BlockDescriptor";
 import type { GetAccountResponse } from "./proto/libernet/GetAccountResponse";
 import type { GetTransactionResponse } from "./proto/libernet/GetTransactionResponse";
 import type { MerkleProof as MerkleProofProto } from "./proto/libernet/MerkleProof";
+import type {
+  _libernet_NodeIdentity_Payload as NodeIdentityPayload,
+  NodeIdentity as NodeIdentityProto,
+} from "./proto/libernet/NodeIdentity";
 import type { QueryTransactionsResponse } from "./proto/libernet/QueryTransactionsResponse";
+import type { Signature as SignatureProto } from "./proto/libernet/Signature";
 import type {
   Transaction as TransactionProto,
   _libernet_Transaction_Payload as TransactionPayloadProto,
 } from "./proto/libernet/Transaction";
 
+import { getNetworkId } from "./config";
+import { PROTOCOL_VERSION } from "./constants";
 import {
   createBinaryMerkleProof32,
   createRemoteAccount,
@@ -38,6 +46,9 @@ import {
   AccountInfo,
   BlockDescriptor,
   CoinTransferTransactionPayload,
+  GeographicalLocation,
+  NodeIdentity,
+  ProtocolVersion,
   TransactionInfo,
   TransactionPayload,
   TransactionQueryParams,
@@ -49,8 +60,10 @@ import {
   decodeBigInt,
   decodeLong,
   decodePointG1,
+  decodePointG2,
   decodeScalar,
   decodeTimestamp,
+  encodeAnyCanonical,
   encodeBigInt,
   encodeMessageCanonical,
   encodePointG1,
@@ -63,7 +76,6 @@ import {
 import { Wallet } from "./wallet";
 
 export const DEFAULT_BOOTSTRAP_NODE_ADDRESSES: string[] = ["localhost:4443"];
-export const CHAIN_ID = 42;
 
 const packageDefinition = loadPackageDefinition(libernetPackageDefinition)
   .libernet as GrpcObject;
@@ -122,6 +134,7 @@ export class Libernet {
   }
 
   private constructor(
+    public readonly networkId: number,
     public readonly account: Account,
     private readonly _proxy: Proxy,
   ) {
@@ -133,17 +146,104 @@ export class Libernet {
     );
   }
 
+  private async _verifySignedMessage<T>(
+    payload: AnyProto | null,
+    signature: SignatureProto | null,
+    expectedSigner: string | null,
+  ): Promise<T> {
+    if (!payload) {
+      throw new Error("received an invalid signed message");
+    }
+    if (!signature) {
+      throw new Error("received an invalid signature");
+    }
+    const remoteAccount = await createRemoteAccount(
+      decodePointG1(signature.publicKey),
+    );
+    if (remoteAccount.address() !== decodeScalar(signature.signer)) {
+      throw new Error("received an invalid signature");
+    }
+    if (expectedSigner && remoteAccount.address() !== expectedSigner) {
+      throw new Error("received an invalid signature");
+    }
+    this._proxy.remoteAccount.bls_verify(
+      encodeAnyCanonical(payload),
+      decodePointG2(signature.signature),
+    );
+    return unpackAny<T>(payload);
+  }
+
+  private async _decodeNodeIdentity(
+    identity: NodeIdentityProto,
+  ): Promise<NodeIdentity> {
+    const payload = await this._verifySignedMessage<NodeIdentityPayload>(
+      identity.payload,
+      identity.signature,
+      this._proxy.remoteAccount.address(),
+    );
+    if (!payload.accountAddress) {
+      throw new Error("invalid node identity: missing account address");
+    }
+    return new NodeIdentity(
+      new ProtocolVersion(
+        payload.protocolVersion.major ?? 0,
+        payload.protocolVersion.minor ?? 0,
+        payload.protocolVersion.build ?? 0,
+      ),
+      decodeLong(payload.chainId),
+      decodeScalar(payload.accountAddress),
+      new GeographicalLocation(
+        payload.location.latitude ?? 0,
+        payload.location.longitude ?? 0,
+      ),
+      payload.networkAddress ?? "",
+      payload.grpcPort,
+      decodeTimestamp(payload.timestamp),
+    );
+  }
+
+  private async _getPeerIdentity(): Promise<NodeIdentity> {
+    return new Promise((resolve, reject) => {
+      this._client.getIdentity(
+        {},
+        (error: unknown, response: NodeIdentityProto) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(this._decodeNodeIdentity(response));
+          }
+        },
+      );
+    });
+  }
+
   public static async create(account: Account): Promise<Libernet> {
     const target =
       Libernet._bootstrapNodes[
         Math.floor(Math.random() * Libernet._bootstrapNodes.length)
       ];
-    const proxy = await Proxy.create(
-      account,
-      Libernet._getUnixSocketPath(target),
-      target,
-    );
-    return new Libernet(account, proxy);
+    const [networkId, proxy] = await Promise.all([
+      getNetworkId(),
+      Proxy.create(account, Libernet._getUnixSocketPath(target), target),
+    ]);
+    const libernet = new Libernet(networkId, account, proxy);
+    try {
+      const peerIdentity = await libernet._getPeerIdentity();
+      if (peerIdentity.chainId !== networkId) {
+        throw new Error(
+          `the node at ${target} runs on a different network (id=${peerIdentity.chainId})`,
+        );
+      }
+      if (!peerIdentity.protocolVersion.isInteroperableWith(PROTOCOL_VERSION)) {
+        throw new Error(
+          `the node at ${target} uses an incompatible protocol version (they have ${peerIdentity.protocolVersion}, we have ${PROTOCOL_VERSION})`,
+        );
+      }
+    } catch (e) {
+      await libernet.destroy();
+      throw e;
+    }
+    return libernet;
   }
 
   private static async _decodeBlockDescriptor(
@@ -266,15 +366,19 @@ export class Libernet {
     return info;
   }
 
-  private static async _decodeTransaction(
+  private async _decodeTransaction(
     blockDescriptor: BlockDescriptor | null,
     transactionProto: TransactionProto,
     validate: boolean,
   ): Promise<TransactionInfo> {
-    const signerAddress = decodeScalar(transactionProto.signature.signer);
+    const { signature } = transactionProto;
+    if (!signature) {
+      throw new Error("invalid transaction signature");
+    }
+    const signerAddress = decodeScalar(signature.signer);
     if (validate) {
       const signer = await createRemoteAccount(
-        decodePointG1(transactionProto.signature.publicKey),
+        decodePointG1(signature.publicKey),
       );
       if (signer.address() !== signerAddress) {
         throw new Error("invalid transaction signature");
@@ -284,7 +388,7 @@ export class Libernet {
       transactionProto.payload,
     );
     const chainId = parseInt("" + content.chainId, 10);
-    if (validate && chainId !== CHAIN_ID) {
+    if (validate && chainId !== this.networkId) {
       throw new Error("invalid chain ID in transaction");
     }
     const nonce = parseInt("" + content.nonce, 10);
@@ -354,7 +458,7 @@ export class Libernet {
     );
   }
 
-  private static async _processTransactionInclusionProof(
+  private async _processTransactionInclusionProof(
     proofProto: MerkleProofProto,
     transactionHash?: string,
     validateTransaction = false,
@@ -363,7 +467,7 @@ export class Libernet {
       proofProto.blockDescriptor,
     );
     const proto = unpackAny<TransactionProto>(proofProto.value);
-    const info = await Libernet._decodeTransaction(
+    const info = await this._decodeTransaction(
       blockDescriptor,
       proto,
       validateTransaction,
@@ -386,13 +490,11 @@ export class Libernet {
     return info;
   }
 
-  private static _processTransactionInclusionProofs(
+  private _processTransactionInclusionProofs(
     proofProtos: MerkleProofProto[],
   ): Promise<TransactionInfo[]> {
     return Promise.all(
-      proofProtos.map((proof) =>
-        Libernet._processTransactionInclusionProof(proof),
-      ),
+      proofProtos.map((proof) => this._processTransactionInclusionProof(proof)),
     );
   }
 
@@ -487,7 +589,7 @@ export class Libernet {
           if (error) {
             reject(error);
           } else {
-            Libernet._processTransactionInclusionProof(
+            this._processTransactionInclusionProof(
               response.transactionProof,
               transactionHash,
               /*validateTransaction=*/ true,
@@ -536,7 +638,7 @@ export class Libernet {
           if (!response.individualProofs) {
             throw new Error("unsupported proof type");
           }
-          Libernet._processTransactionInclusionProofs(
+          this._processTransactionInclusionProofs(
             response.individualProofs.individualProof || [],
           )
             .then(resolve)
@@ -572,7 +674,7 @@ export class Libernet {
           if (error) {
             reject(error);
           } else {
-            resolve(Libernet._decodeTransaction(null, proto, false));
+            resolve(this._decodeTransaction(null, proto, false));
           }
         },
       );
@@ -596,7 +698,7 @@ export class Libernet {
       nonce = lastNonce + 1;
     }
     return this._submitTransactionImpl({
-      chainId: CHAIN_ID,
+      chainId: this.networkId,
       nonce,
       transaction: "sendCoins",
       sendCoins: {
@@ -673,10 +775,19 @@ class LibernetManager {
     return this._libernet;
   }
 
+  public async resetConnection(): Promise<void> {
+    if (this._libernet) {
+      const libernet = this._libernet;
+      this._libernet = null;
+      await libernet.destroy();
+    }
+  }
+
   public async destroy(): Promise<void> {
     if (this._libernet) {
-      await this._libernet.destroy();
+      const libernet = this._libernet;
       this._libernet = null;
+      await libernet.destroy();
     }
     if (this._account) {
       this._account = null;

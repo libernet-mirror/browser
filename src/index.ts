@@ -6,7 +6,12 @@ import path from "node:path";
 
 import { app, BrowserWindow as ElectronBrowserWindow, ipcMain } from "electron";
 
-import { getHomeAddress, saveHomeAddress } from "./config";
+import {
+  getHomeAddress,
+  getNetworkId,
+  saveHomeAddress,
+  saveNetworkId,
+} from "./config";
 import {
   DNS_NAME_PATTERN,
   DNS_PREFIX_PATTERN,
@@ -82,6 +87,12 @@ ipcMain.handle("settings/set-home-page", async (_, homePage: string) => {
   })();
   await saveHomeAddress(homePage);
   return homePage;
+});
+
+ipcMain.handle("net/get-id", () => getNetworkId());
+
+ipcMain.handle("net/set-id", async (_, id: number) => {
+  await saveNetworkId(id);
 });
 
 ipcMain.handle("net/get-node-list", () => getBootstrapNodes());

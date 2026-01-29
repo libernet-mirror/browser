@@ -17,20 +17,28 @@ const PageTitle = ({ children }: PropsWithChildren) => (
   <h1 className="text-2xl font-bold">{children}</h1>
 );
 
-const HomePageField = () => {
+const InputField = ({
+  description,
+  fetchValue,
+  updateValue,
+}: {
+  description: string;
+  fetchValue: () => Promise<string>;
+  updateValue: (newValue: string) => Promise<string>;
+}) => {
   const [previousValue, setPreviousValue] = useState("");
-  const [homePage, setHomePage] = useState("");
+  const [value, setValue] = useState("");
   const [validation, setValidation] = useState<string | null>(null);
   useAsyncEffect(async () => {
-    const homePage = await libernet().getHomePage();
-    setPreviousValue(homePage);
-    setHomePage(homePage);
+    const value = await fetchValue();
+    setPreviousValue(value);
+    setValue(value);
   }, []);
   return (
     <label>
-      Home page:
+      {description}:{" "}
       <Input
-        value={homePage}
+        value={value}
         state={(() => {
           switch (validation) {
             case null:
@@ -46,18 +54,18 @@ const HomePageField = () => {
         autoCapitalize="off"
         onFocus={() => {
           setValidation(null);
-          setPreviousValue(homePage);
+          setPreviousValue(value);
         }}
-        onChange={({ target }) => setHomePage(target.value)}
+        onChange={({ target: { value } }) => setValue(value)}
         onBlur={async ({ target }) => {
           let value;
           try {
-            value = await libernet().setHomePage(target.value);
+            value = await updateValue(target.value);
           } catch (e) {
             setValidation((e as Error).message);
             return;
           }
-          setHomePage(value);
+          setValue(value);
           if (value !== previousValue) {
             setValidation("");
           } else {
@@ -68,6 +76,16 @@ const HomePageField = () => {
     </label>
   );
 };
+
+const HomePageField = () => (
+  <InputField
+    description="Home page"
+    fetchValue={async () => await libernet().getHomePage()}
+    updateValue={async (homePage: string) =>
+      await libernet().setHomePage(homePage)
+    }
+  />
+);
 
 const GeneralSettings = () => {
   return (
@@ -82,6 +100,21 @@ const GeneralSettings = () => {
     </>
   );
 };
+
+const NetworkIdField = () => (
+  <InputField
+    description="Network ID"
+    fetchValue={async () => "" + (await libernet().getNetworkId())}
+    updateValue={async (networkId: string) => {
+      if (!/^[0-9]+$/.test(networkId)) {
+        throw new Error("invalid network ID");
+      }
+      const value = parseInt(networkId, 10);
+      await libernet().setNetworkId(value);
+      return "" + value;
+    }}
+  />
+);
 
 const NetworkSettings = () => {
   const [addresses, setAddresses] = useState<string[]>([]);
@@ -109,6 +142,7 @@ const NetworkSettings = () => {
           }
         }}
       >
+        <NetworkIdField />
         <label>
           Enter the list of known Libernet nodes, one per line.
           <TextArea

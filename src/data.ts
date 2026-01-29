@@ -8,6 +8,59 @@ export interface TabDescriptor {
   icons: string[];
 }
 
+export class ProtocolVersion {
+  public constructor(
+    public readonly major: number,
+    public readonly minor: number,
+    public readonly build: number,
+  ) {}
+
+  public toString(): string {
+    return `${this.major}.${this.minor}.${this.build}`;
+  }
+
+  public isIncompatibleWith(other: ProtocolVersion): boolean {
+    if (this.major > 0) {
+      return other.major !== this.major;
+    } else {
+      return other.major > 0 || other.minor !== this.minor;
+    }
+  }
+
+  public isCompatibleWith(other: ProtocolVersion): boolean {
+    return !this.isIncompatibleWith(other);
+  }
+
+  public isInteroperableWith(other: ProtocolVersion): boolean {
+    if (this.major > 1) {
+      return other.major > this.major - 2 && other.major < this.major + 2;
+    } else if (this.major > 0) {
+      return other.major > 0 && other.major < 3;
+    } else {
+      return other.major < 1 && other.minor === this.minor;
+    }
+  }
+}
+
+export class GeographicalLocation {
+  public constructor(
+    public readonly latitude: number,
+    public readonly longitude: number,
+  ) {}
+}
+
+export class NodeIdentity {
+  public constructor(
+    public readonly protocolVersion: ProtocolVersion,
+    public readonly chainId: number,
+    public readonly accountAddress: string,
+    public readonly location: GeographicalLocation,
+    public readonly networkAddress: string,
+    public readonly grpcPort: number,
+    public readonly timestamp: Date,
+  ) {}
+}
+
 export class BlockDescriptor {
   public constructor(
     public readonly blockHash: string,

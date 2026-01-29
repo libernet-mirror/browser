@@ -139,7 +139,10 @@ export function encodePointG2(hex: string): PointG2 {
   return encodePoint(hex, 96);
 }
 
-export function decodeScalar(scalar: Scalar): string {
+export function decodeScalar(scalar: Scalar | null): string {
+  if (!scalar) {
+    throw new Error("invalid scalar format");
+  }
   const buffer = scalar.value;
   if (!buffer) {
     throw new Error("invalid scalar format");
@@ -240,7 +243,12 @@ export function packAny<T>(proto: T, typeName: string): AnyProto {
   };
 }
 
-function normalizeBytes(value: Buffer | Uint8Array | string): Uint8Array {
+function normalizeBytes(
+  value: Buffer | Uint8Array | string | null,
+): Uint8Array {
+  if (!value) {
+    throw new Error("invalid message format");
+  }
   if (typeof value === "string") {
     return Uint8Array.from(Buffer.from(value, "base64"));
   }
@@ -252,10 +260,13 @@ function normalizeBytes(value: Buffer | Uint8Array | string): Uint8Array {
 
 export function unpackAny<T>(any: AnyProto): T {
   const { type_url, value } = any as {
-    type_url: string;
-    value: Buffer | Uint8Array | string;
+    type_url: string | null;
+    value: Buffer | Uint8Array | string | null;
   };
-  if (!type_url.startsWith(PROTO_TYPE_NAME_PREFIX + "/")) {
+  if (
+    typeof type_url !== "string" ||
+    !type_url.startsWith(PROTO_TYPE_NAME_PREFIX + "/")
+  ) {
     throw new Error(`invalid type_url: ${JSON.stringify(type_url)}`);
   }
   const typeName = type_url.slice(PROTO_TYPE_NAME_PREFIX.length + 1);
@@ -274,9 +285,13 @@ function encodeVarInt(buffer: number[], value: number): void {
 
 export function encodeAnyCanonical(any: AnyProto): Uint8Array {
   const { type_url, value } = any as {
-    type_url: string;
-    value: Buffer | Uint8Array | string;
+    type_url: string | null;
+    value: Buffer | Uint8Array | string | null;
   };
+  if (!type_url) {
+    throw new Error("invalid message format");
+  }
+
   const typeUrlBytes = Buffer.from(type_url, "utf8");
   const valueBytes = normalizeBytes(value);
 
