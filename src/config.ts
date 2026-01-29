@@ -130,6 +130,6 @@ export async function getNetworkId(): Promise<number> {
   return (await readConfig()).networkId ?? DEFAULT_NETWORK_ID;
 }
 
-export async function setNetworkId(networkId: number): Promise<void> {
+export async function saveNetworkId(networkId: number): Promise<void> {
   await updateConfig({ networkId });
 }

@@ -77,6 +77,8 @@ contextBridge.exposeInMainWorld("libernet", {
   navigateForward: () => ipcRenderer.invoke("root/forward"),
   startRefresh: () => ipcRenderer.invoke("root/refresh"),
   cancelNavigation: () => ipcRenderer.invoke("root/cancel-navigation"),
+  getNetworkId: () => ipcRenderer.invoke("net/get-id"),
+  setNetworkId: (id: number) => ipcRenderer.invoke("net/set-id", id),
   getNodeList: () => ipcRenderer.invoke("net/get-node-list"),
   setNodeList: (nodes: string[]) =>
     ipcRenderer.invoke("net/set-node-list", nodes),
