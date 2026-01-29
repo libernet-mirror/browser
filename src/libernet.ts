@@ -34,6 +34,7 @@ import type {
   _libernet_Transaction_Payload as TransactionPayloadProto,
 } from "./proto/libernet/Transaction";
 
+import { getNetworkId } from "./config";
 import { PROTOCOL_VERSION } from "./constants";
 import {
   createBinaryMerkleProof32,
@@ -75,7 +76,6 @@ import {
 import { Wallet } from "./wallet";
 
 export const DEFAULT_BOOTSTRAP_NODE_ADDRESSES: string[] = ["localhost:4443"];
-export const CHAIN_ID = 42;
 
 const packageDefinition = loadPackageDefinition(libernetPackageDefinition)
   .libernet as GrpcObject;
@@ -134,6 +134,7 @@ export class Libernet {
   }
 
   private constructor(
+    public readonly networkId: number,
     public readonly account: Account,
     private readonly _proxy: Proxy,
   ) {
@@ -221,15 +222,14 @@ export class Libernet {
       Libernet._bootstrapNodes[
         Math.floor(Math.random() * Libernet._bootstrapNodes.length)
       ];
-    const proxy = await Proxy.create(
-      account,
-      Libernet._getUnixSocketPath(target),
-      target,
-    );
-    const libernet = new Libernet(account, proxy);
+    const [networkId, proxy] = await Promise.all([
+      getNetworkId(),
+      Proxy.create(account, Libernet._getUnixSocketPath(target), target),
+    ]);
+    const libernet = new Libernet(networkId, account, proxy);
     try {
       const peerIdentity = await libernet._getPeerIdentity();
-      if (peerIdentity.chainId !== CHAIN_ID) {
+      if (peerIdentity.chainId !== networkId) {
         throw new Error(
           `the node at ${target} runs on a different network (id=${peerIdentity.chainId})`,
         );
@@ -240,7 +240,7 @@ export class Libernet {
         );
       }
     } catch (e) {
-      libernet.destroy();
+      await libernet.destroy();
       throw e;
     }
     return libernet;
@@ -366,7 +366,7 @@ export class Libernet {
     return info;
   }
 
-  private static async _decodeTransaction(
+  private async _decodeTransaction(
     blockDescriptor: BlockDescriptor | null,
     transactionProto: TransactionProto,
     validate: boolean,
@@ -388,7 +388,7 @@ export class Libernet {
       transactionProto.payload,
     );
     const chainId = parseInt("" + content.chainId, 10);
-    if (validate && chainId !== CHAIN_ID) {
+    if (validate && chainId !== this.networkId) {
       throw new Error("invalid chain ID in transaction");
     }
     const nonce = parseInt("" + content.nonce, 10);
@@ -458,7 +458,7 @@ export class Libernet {
     );
   }
 
-  private static async _processTransactionInclusionProof(
+  private async _processTransactionInclusionProof(
     proofProto: MerkleProofProto,
     transactionHash?: string,
     validateTransaction = false,
@@ -467,7 +467,7 @@ export class Libernet {
       proofProto.blockDescriptor,
     );
     const proto = unpackAny<TransactionProto>(proofProto.value);
-    const info = await Libernet._decodeTransaction(
+    const info = await this._decodeTransaction(
       blockDescriptor,
       proto,
       validateTransaction,
@@ -490,13 +490,11 @@ export class Libernet {
     return info;
   }
 
-  private static _processTransactionInclusionProofs(
+  private _processTransactionInclusionProofs(
     proofProtos: MerkleProofProto[],
   ): Promise<TransactionInfo[]> {
     return Promise.all(
-      proofProtos.map((proof) =>
-        Libernet._processTransactionInclusionProof(proof),
-      ),
+      proofProtos.map((proof) => this._processTransactionInclusionProof(proof)),
     );
   }
 
@@ -591,7 +589,7 @@ export class Libernet {
           if (error) {
             reject(error);
           } else {
-            Libernet._processTransactionInclusionProof(
+            this._processTransactionInclusionProof(
               response.transactionProof,
               transactionHash,
               /*validateTransaction=*/ true,
@@ -640,7 +638,7 @@ export class Libernet {
           if (!response.individualProofs) {
             throw new Error("unsupported proof type");
           }
-          Libernet._processTransactionInclusionProofs(
+          this._processTransactionInclusionProofs(
             response.individualProofs.individualProof || [],
           )
             .then(resolve)
@@ -676,7 +674,7 @@ export class Libernet {
           if (error) {
             reject(error);
           } else {
-            resolve(Libernet._decodeTransaction(null, proto, false));
+            resolve(this._decodeTransaction(null, proto, false));
           }
         },
       );
@@ -700,7 +698,7 @@ export class Libernet {
       nonce = lastNonce + 1;
     }
     return this._submitTransactionImpl({
-      chainId: CHAIN_ID,
+      chainId: this.networkId,
       nonce,
       transaction: "sendCoins",
       sendCoins: {
@@ -777,10 +775,19 @@ class LibernetManager {
     return this._libernet;
   }
 
+  public async resetConnection(): Promise<void> {
+    if (this._libernet) {
+      const libernet = this._libernet;
+      this._libernet = null;
+      await libernet.destroy();
+    }
+  }
+
   public async destroy(): Promise<void> {
     if (this._libernet) {
-      await this._libernet.destroy();
+      const libernet = this._libernet;
       this._libernet = null;
+      await libernet.destroy();
     }
     if (this._account) {
       this._account = null;
