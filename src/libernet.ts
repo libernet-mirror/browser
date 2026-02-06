@@ -40,7 +40,8 @@ import {
   createBinaryMerkleProof32,
   createRemoteAccount,
   createTernaryMerkleProof,
-  poseidonHash,
+  poseidonHashT3,
+  poseidonHashT4,
 } from "./crypto";
 import {
   AccountInfo,
@@ -258,7 +259,7 @@ export class Libernet {
     const transactionsRootHash = decodeScalar(proto.transactionsRootHash);
     const accountsRootHash = decodeScalar(proto.accountsRootHash);
     const programStorageRootHash = decodeScalar(proto.programStorageRootHash);
-    const computedHash = await poseidonHash([
+    const computedHash = await poseidonHashT4([
       toScalar(chainId),
       toScalar(blockNumber),
       previousBlockHash,
@@ -324,7 +325,7 @@ export class Libernet {
     const lastNonce = decodeLong(accountProto.lastNonce);
     const balance = decodeBigInt(accountProto.balance);
     const stakingBalance = decodeBigInt(accountProto.stakingBalance);
-    const hash = await poseidonHash([
+    const hash = await poseidonHashT4([
       "0x" + lastNonce.toString(16),
       decodeScalar(accountProto.balance),
       decodeScalar(accountProto.stakingBalance),
@@ -402,7 +403,7 @@ export class Libernet {
           }
           const recipient = decodeScalar(content.blockReward.recipient);
           const amount = decodeScalar(content.blockReward.amount);
-          transactionHash = await poseidonHash([
+          transactionHash = await poseidonHashT3([
             signerAddress,
             toScalar(chainId),
             toScalar(nonce),
@@ -422,7 +423,7 @@ export class Libernet {
           }
           const recipient = decodeScalar(content.sendCoins.recipient);
           const amount = decodeScalar(content.sendCoins.amount);
-          transactionHash = await poseidonHash([
+          transactionHash = await poseidonHashT3([
             signerAddress,
             toScalar(chainId),
             toScalar(nonce),

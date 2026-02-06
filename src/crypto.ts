@@ -1,7 +1,8 @@
 import { Mutex } from "./mutex";
 
 import type {
-  poseidon_hash,
+  poseidon_hash_t3,
+  poseidon_hash_t4,
   BinaryMerkleProof32,
   RemoteAccount,
   TernaryMerkleProof,
@@ -48,8 +49,15 @@ class CryptoLoader {
   }
 }
 
-export async function poseidonHash(inputs: string[]): Promise<string> {
-  const fn = await CryptoLoader.load<typeof poseidon_hash>("poseidon_hash");
+export async function poseidonHashT3(inputs: string[]): Promise<string> {
+  const fn =
+    await CryptoLoader.load<typeof poseidon_hash_t3>("poseidon_hash_t3");
+  return fn(inputs);
+}
+
+export async function poseidonHashT4(inputs: string[]): Promise<string> {
+  const fn =
+    await CryptoLoader.load<typeof poseidon_hash_t4>("poseidon_hash_t4");
   return fn(inputs);
 }
 
