@@ -27,7 +27,12 @@ import { ControlBar } from "./controls";
 import { type TabDescriptor } from "./data";
 import { type WindowHandlerDetails, Tab } from "./tab";
 
-export interface BrowserWindowSettings {
+export interface BrowserWindowOptions {
+  initialUrl?: string;
+  incognito?: boolean;
+}
+
+interface BrowserWindowSettings {
   x: number | null;
   y: number | null;
   width: number;
@@ -81,14 +86,19 @@ export class BrowserWindow {
       () => this._updateControlBar(),
       (tabId: number) => this._controlBar.onStartNavigation(tabId),
       (tabId: number) => this._controlBar.onFinishNavigation(tabId),
-      ({ url, disposition }: WindowHandlerDetails) =>
-        this._insertTab(
-          this._tabs.length,
-          url,
-          disposition !== "background-tab"
-            ? NewTabDisposition.Activate
-            : NewTabDisposition.Load,
-        ),
+      ({ url, disposition }: WindowHandlerDetails) => {
+        switch (disposition) {
+          case "background-tab":
+            this._insertTab(this._tabs.length, url, NewTabDisposition.Load);
+            break;
+          case "new-window":
+            BrowserWindow.create({ initialUrl: url });
+            break;
+          default:
+            this._insertTab(this._tabs.length, url, NewTabDisposition.Activate);
+            break;
+        }
+      },
     );
   }
 
@@ -154,14 +164,14 @@ export class BrowserWindow {
         label: "New window",
         accelerator: "CommandOrControl+N",
         click: () => {
-          BrowserWindow.create();
+          BrowserWindow.create({});
         },
       },
       {
-        label: "New incognito window",
+        label: "New Incognito window",
         accelerator: "CommandOrControl+Shift+N",
         click: () => {
-          BrowserWindow.create(/*incognito=*/ true);
+          BrowserWindow.create({ incognito: true });
         },
       },
       { type: "separator" },
@@ -182,7 +192,9 @@ export class BrowserWindow {
     ]);
   }
 
-  public static async create(incognito = false): Promise<BrowserWindow> {
+  public static async create(
+    options: BrowserWindowOptions,
+  ): Promise<BrowserWindow> {
     const [maximized, { x, y }, { width, height }, homeAddress] =
       await Promise.all([
         isWindowMaximized(),
@@ -190,14 +202,17 @@ export class BrowserWindow {
         getWindowSize(),
         getHomeAddress(),
       ]);
-    return new BrowserWindow([homeAddress], {
-      x,
-      y,
-      width,
-      height,
-      maximized,
-      incognito,
-    });
+    return new BrowserWindow(
+      [options.initialUrl ? options.initialUrl : homeAddress],
+      {
+        x,
+        y,
+        width,
+        height,
+        maximized,
+        incognito: !!options.incognito,
+      },
+    );
   }
 
   private _updateControlBar(): void {
@@ -238,7 +253,10 @@ export class BrowserWindow {
   }
 
   private _matches(sender: WebContents): boolean {
-    return this._tabs.some((tab) => tab.matches(sender));
+    return (
+      this._controlBar.matches(sender) ||
+      this._tabs.some((tab) => tab.matches(sender))
+    );
   }
 
   public static find(sender: WebContents): BrowserWindow | null {
@@ -246,6 +264,7 @@ export class BrowserWindow {
       window._matches(sender),
     );
     if (index < 0) {
+      console.error(new Error(`window not found for renderer ID ${sender.id}`));
       return null;
     } else {
       return BrowserWindow._INSTANCES[index];
@@ -291,7 +310,7 @@ export class BrowserWindow {
     return this._getTab(id)?.isLoading();
   }
 
-  public setUrl(url: string): void {
+  public setCurrentUrl(url: string): void {
     if (!URL_PREFIX_PATTERN.test(url)) {
       if (DNS_HEURISTIC_PREFIX_PATTERN.test(url)) {
         url = "http://" + url;
