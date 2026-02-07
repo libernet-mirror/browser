@@ -1,6 +1,7 @@
 import path from "node:path";
 
 import {
+  type WebContents,
   app,
   BaseWindow,
   BaseWindowConstructorOptions,
@@ -323,6 +324,10 @@ export class BrowserWindow {
       }
     }
     this._getCurrentTab().setUrl(url);
+  }
+
+  public matches(sender: WebContents): boolean {
+    return this._tabs.some((tab) => tab.matches(sender));
   }
 
   public close(): void {

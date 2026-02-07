@@ -158,15 +158,7 @@ export class Tab {
     view.webContents.loadURL(Tab._mapUserUrlToSystemUrl(this._url));
   }
 
-  private _createWebView(): WebContentsView {
-    const view = new WebContentsView({
-      webPreferences: {
-        contextIsolation: true,
-        partition: "persist:libernet",
-        devTools: true,
-      },
-    });
-    this._configureView(view);
+  private _handleContextMenu(view: WebContentsView): void {
     view.webContents.on(
       "context-menu",
       (_, { linkURL, isEditable, editFlags }) => {
@@ -261,6 +253,18 @@ export class Tab {
         });
       },
     );
+  }
+
+  private _createWebView(): WebContentsView {
+    const view = new WebContentsView({
+      webPreferences: {
+        contextIsolation: true,
+        partition: "persist:libernet",
+        devTools: true,
+      },
+    });
+    this._configureView(view);
+    this._handleContextMenu(view);
     return view;
   }
 
