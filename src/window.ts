@@ -6,6 +6,7 @@ import {
   BaseWindowConstructorOptions,
   HandlerDetails,
   ipcMain,
+  Menu,
 } from "electron";
 
 import {
@@ -18,6 +19,7 @@ import {
   saveWindowSize,
 } from "./config";
 import {
+  CONTROL_BAR_HEIGHT,
   DEFAULT_SEARCH_ENGINE,
   DNS_HEURISTIC_PREFIX_PATTERN,
   URL_PREFIX_PATTERN,
@@ -41,6 +43,7 @@ enum NewTabDisposition {
 
 export class BrowserWindow {
   private readonly _window: BaseWindow;
+  private readonly _mainMenu: Menu;
   private readonly _controlBar: ControlBar;
   private readonly _tabs: Tab[] = [];
   private _currentTabIndex: number;
@@ -138,6 +141,29 @@ export class BrowserWindow {
       .on("maximize", () => saveWindowMaximized(true))
       .on("unmaximize", () => saveWindowMaximized(false));
 
+    this._mainMenu = Menu.buildFromTemplate([
+      {
+        label: "New tab",
+        accelerator: "CommandOrControl+T",
+        click: () => this._addTab(),
+      },
+      { type: "separator" },
+      {
+        label: "LiberWallet",
+        click: () => this._addTab("liber://wallet"),
+      },
+      { type: "separator" },
+      {
+        label: "Settings",
+        click: () => this._addTab("liber://settings"),
+      },
+      {
+        label: "Exit",
+        accelerator: "Alt+F4",
+        click: () => this.close(),
+      },
+    ]);
+
     ipcMain.handle("window/minimize", () => this._window.minimize());
 
     ipcMain.handle("window/maximize", () => {
@@ -196,6 +222,14 @@ export class BrowserWindow {
     ipcMain.handle("root/cancel-navigation", () =>
       this._logErrors(() => this._getCurrentTab().stopLoading()),
     );
+
+    ipcMain.handle("root/main-menu", () => {
+      const { width } = this._window.getBounds();
+      this._mainMenu.popup({
+        x: width,
+        y: CONTROL_BAR_HEIGHT - 5,
+      });
+    });
   }
 
   public static async create(): Promise<BrowserWindow> {
@@ -254,12 +288,8 @@ export class BrowserWindow {
     this._updateControlBar();
   }
 
-  private _addTab(): void {
-    this._insertTab(
-      this._tabs.length,
-      "liber://new",
-      NewTabDisposition.Activate,
-    );
+  private _addTab(url = "liber://new"): void {
+    this._insertTab(this._tabs.length, url, NewTabDisposition.Activate);
   }
 
   private _destroyTab(id: number): void {

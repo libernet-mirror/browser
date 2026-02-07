@@ -280,7 +280,7 @@ const Navigation = ({ activeTabId }: { activeTabId: number }) => {
       <PlainButton round onClick={() => libernet().setUrl("liber://wallet")}>
         <WalletIcon className="size-5" />
       </PlainButton>
-      <PlainButton round onClick={() => libernet().setUrl("liber://settings")}>
+      <PlainButton round onClick={() => libernet().openMainMenu()}>
         <DotsIcon className="size-5" />
       </PlainButton>
     </div>
