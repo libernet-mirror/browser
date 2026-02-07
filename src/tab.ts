@@ -84,6 +84,7 @@ export class Tab {
   public constructor(
     private readonly _parentWindow: BaseWindow,
     private _url: string,
+    private readonly _incognito: boolean,
     private readonly _onUpdate: (descriptor: TabDescriptor) => void,
     private readonly _onStartNavigation: (tabId: number) => void,
     private readonly _onFinishNavigation: (tabId: number) => void,
@@ -259,7 +260,7 @@ export class Tab {
     const view = new WebContentsView({
       webPreferences: {
         contextIsolation: true,
-        partition: "persist:libernet",
+        partition: this._incognito ? "libernet" : "persist:libernet",
         devTools: true,
       },
     });

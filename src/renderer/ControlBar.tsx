@@ -70,7 +70,7 @@ const TabPill = ({
     (async () => {
       const loading = await libernet().isTabLoading(id);
       if (!cancelled) {
-        setLoading(loading);
+        setLoading(!!loading);
       }
     })();
     return () => {
@@ -200,9 +200,9 @@ const Navigation = ({ activeTabId }: { activeTabId: number }) => {
         libernet().isTabLoading(activeTabId),
       ]);
       if (!cancelled) {
-        setUrl(url);
+        setUrl("" + url);
         setUrlOverride(null);
-        setLoading(loading);
+        setLoading(!!loading);
       }
     })();
     return () => {
@@ -307,8 +307,8 @@ export const ControlBar = () => {
         libernet().getActiveTabId(),
       ]);
       if (!cancelled) {
-        setTabs(tabs);
-        setActiveTabId(activeTabId);
+        setTabs(tabs ?? []);
+        setActiveTabId(~~activeTabId);
       }
     })();
     return () => {

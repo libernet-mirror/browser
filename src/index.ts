@@ -67,6 +67,14 @@ import {
 
 const walletFileMutex = new Mutex();
 
+function logErrors(fn: (...args: unknown[]) => void, ...args: unknown[]): void {
+  try {
+    fn.call(this, ...args);
+  } catch (e) {
+    console.error(e);
+  }
+}
+
 function getWalletPath(): string {
   return path.join(app.getPath("userData"), "wallet.json");
 }
@@ -88,6 +96,71 @@ ipcMain.handle("settings/set-home-page", async (_, homePage: string) => {
   await saveHomeAddress(homePage);
   return homePage;
 });
+
+ipcMain.handle("window/minimize", ({ sender }) =>
+  logErrors(BrowserWindow.find(sender)?.minimize),
+);
+
+ipcMain.handle("window/maximize", ({ sender }) =>
+  logErrors(BrowserWindow.find(sender)?.maximize),
+);
+
+ipcMain.handle("window/close", ({ sender }) =>
+  logErrors(BrowserWindow.find(sender)?.close),
+);
+
+ipcMain.handle("window/get-tabs", ({ sender }) =>
+  BrowserWindow.find(sender)?.getTabs(),
+);
+
+ipcMain.handle("window/get-active-tab", ({ sender }) =>
+  BrowserWindow.find(sender)?.getActiveTab(),
+);
+
+ipcMain.handle("window/select-tab", ({ sender }, id: number) =>
+  logErrors(BrowserWindow.find(sender)?.selectTab, id),
+);
+
+ipcMain.handle("window/add-tab", ({ sender }) =>
+  logErrors(BrowserWindow.find(sender)?.addTab),
+);
+
+ipcMain.handle("window/delete-tab", ({ sender }, id: number) =>
+  logErrors(BrowserWindow.find(sender)?.destroyTab, id),
+);
+
+ipcMain.handle(
+  "tab/get-url",
+  ({ sender }, tabId: number) => BrowserWindow.find(sender)?.getTab(tabId)?.url,
+);
+
+ipcMain.handle("tab/set-url", ({ sender }, url: string) =>
+  logErrors(BrowserWindow.find(sender)?.setUrl, url),
+);
+
+ipcMain.handle("tab/is-loading", ({ sender }, tabId: number) =>
+  BrowserWindow.find(sender)?.isTabLoading(tabId),
+);
+
+ipcMain.handle("root/back", ({ sender }) =>
+  logErrors(BrowserWindow.find(sender)?.goBack),
+);
+
+ipcMain.handle("root/forward", ({ sender }) =>
+  logErrors(BrowserWindow.find(sender)?.goForward),
+);
+
+ipcMain.handle("root/refresh", ({ sender }) =>
+  logErrors(BrowserWindow.find(sender)?.reload),
+);
+
+ipcMain.handle("root/cancel-navigation", ({ sender }) =>
+  logErrors(BrowserWindow.find(sender)?.stopLoading),
+);
+
+ipcMain.handle("root/main-menu", ({ sender }) =>
+  logErrors(BrowserWindow.find(sender)?.openMainMenu),
+);
 
 ipcMain.handle("net/get-id", () => getNetworkId());
 
