@@ -4,7 +4,6 @@ import {
   app,
   BaseWindow,
   BaseWindowConstructorOptions,
-  HandlerDetails,
   ipcMain,
   Menu,
 } from "electron";
@@ -25,7 +24,7 @@ import {
   URL_PREFIX_PATTERN,
 } from "./constants";
 import { ControlBar } from "./controls";
-import { Tab } from "./tab";
+import { type WindowHandlerDetails, Tab } from "./tab";
 
 export interface BrowserWindowSettings {
   x: number | null;
@@ -71,7 +70,7 @@ export class BrowserWindow {
       () => this._updateControlBar(),
       (tabId: number) => this._controlBar.onStartNavigation(tabId),
       (tabId: number) => this._controlBar.onFinishNavigation(tabId),
-      ({ url, disposition }: HandlerDetails) =>
+      ({ url, disposition }: WindowHandlerDetails) =>
         this._insertTab(
           this._tabs.length,
           url,
@@ -226,6 +225,7 @@ export class BrowserWindow {
     ipcMain.handle("root/main-menu", () => {
       const { width } = this._window.getBounds();
       this._mainMenu.popup({
+        window: this._window,
         x: width,
         y: CONTROL_BAR_HEIGHT - 5,
       });
