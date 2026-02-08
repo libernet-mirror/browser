@@ -70,7 +70,7 @@ const TabPill = ({
     (async () => {
       const loading = await libernet().isTabLoading(id);
       if (!cancelled) {
-        setLoading(loading);
+        setLoading(!!loading);
       }
     })();
     return () => {
@@ -200,9 +200,9 @@ const Navigation = ({ activeTabId }: { activeTabId: number }) => {
         libernet().isTabLoading(activeTabId),
       ]);
       if (!cancelled) {
-        setUrl(url);
+        setUrl("" + url);
         setUrlOverride(null);
-        setLoading(loading);
+        setLoading(!!loading);
       }
     })();
     return () => {
@@ -280,7 +280,7 @@ const Navigation = ({ activeTabId }: { activeTabId: number }) => {
       <PlainButton round onClick={() => libernet().setUrl("liber://wallet")}>
         <WalletIcon className="size-5" />
       </PlainButton>
-      <PlainButton round onClick={() => libernet().setUrl("liber://settings")}>
+      <PlainButton round onClick={() => libernet().openMainMenu()}>
         <DotsIcon className="size-5" />
       </PlainButton>
     </div>
@@ -307,8 +307,8 @@ export const ControlBar = () => {
         libernet().getActiveTabId(),
       ]);
       if (!cancelled) {
-        setTabs(tabs);
-        setActiveTabId(activeTabId);
+        setTabs(tabs ?? []);
+        setActiveTabId(~~activeTabId);
       }
     })();
     return () => {

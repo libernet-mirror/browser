@@ -35,7 +35,7 @@ if (require("electron-squirrel-startup")) {
 // This method will be called when Electron has finished initialization and is ready to create
 // browser windows. Some APIs can only be used after this event occurs.
 app.on("ready", async () => {
-  await BrowserWindow.create();
+  await BrowserWindow.create({});
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common for applications and their
@@ -50,7 +50,7 @@ app.on("activate", async () => {
   // On OS X it's common to re-create a window in the app when the dock icon is clicked and there
   // are no other windows open.
   if (ElectronBrowserWindow.getAllWindows().length === 0) {
-    await BrowserWindow.create();
+    await BrowserWindow.create({});
   }
 });
 
@@ -87,6 +87,119 @@ ipcMain.handle("settings/set-home-page", async (_, homePage: string) => {
   })();
   await saveHomeAddress(homePage);
   return homePage;
+});
+
+ipcMain.handle("window/minimize", ({ sender }) => {
+  try {
+    BrowserWindow.find(sender)?.minimize();
+  } catch (e) {
+    console.error(e);
+  }
+});
+
+ipcMain.handle("window/maximize", ({ sender }) => {
+  try {
+    BrowserWindow.find(sender)?.maximize();
+  } catch (e) {
+    console.error(e);
+  }
+});
+
+ipcMain.handle("window/close", ({ sender }) => {
+  try {
+    BrowserWindow.find(sender)?.close();
+  } catch (e) {
+    console.error(e);
+  }
+});
+
+ipcMain.handle("window/get-tabs", ({ sender }) =>
+  BrowserWindow.find(sender)?.getTabs(),
+);
+
+ipcMain.handle("window/get-active-tab", ({ sender }) =>
+  BrowserWindow.find(sender)?.getActiveTab(),
+);
+
+ipcMain.handle("window/select-tab", ({ sender }, id: number) => {
+  try {
+    BrowserWindow.find(sender)?.selectTab(id);
+  } catch (e) {
+    console.error(e);
+  }
+});
+
+ipcMain.handle("window/add-tab", ({ sender }) => {
+  try {
+    BrowserWindow.find(sender)?.addTab();
+  } catch (e) {
+    console.error(e);
+  }
+});
+
+ipcMain.handle("window/delete-tab", ({ sender }, id: number) => {
+  try {
+    BrowserWindow.find(sender)?.destroyTab(id);
+  } catch (e) {
+    console.error(e);
+  }
+});
+
+ipcMain.handle(
+  "tab/get-url",
+  ({ sender }, tabId: number) => BrowserWindow.find(sender)?.getTab(tabId)?.url,
+);
+
+ipcMain.handle("tab/set-url", ({ sender }, url: string) => {
+  try {
+    BrowserWindow.find(sender)?.setCurrentUrl(url);
+  } catch (e) {
+    console.error(e);
+  }
+});
+
+ipcMain.handle("tab/is-loading", ({ sender }, tabId: number) =>
+  BrowserWindow.find(sender)?.isTabLoading(tabId),
+);
+
+ipcMain.handle("root/back", ({ sender }) => {
+  try {
+    BrowserWindow.find(sender)?.goBack();
+  } catch (e) {
+    console.error(e);
+  }
+});
+
+ipcMain.handle("root/forward", ({ sender }) => {
+  try {
+    BrowserWindow.find(sender)?.goForward();
+  } catch (e) {
+    console.error(e);
+  }
+});
+
+ipcMain.handle("root/refresh", ({ sender }) => {
+  try {
+    BrowserWindow.find(sender)?.reload();
+  } catch (e) {
+    console.error(e);
+  }
+});
+
+ipcMain.handle("root/cancel-navigation", ({ sender }) => {
+  try {
+    BrowserWindow.find(sender)?.stopLoading();
+  } catch (e) {
+    console.error(e);
+  }
+});
+
+ipcMain.handle("root/main-menu", ({ sender }) => {
+  try {
+    BrowserWindow.find(sender)?.openMainMenu();
+  } catch (e) {
+    console.error(e);
+  }
 });
 
 ipcMain.handle("net/get-id", () => getNetworkId());

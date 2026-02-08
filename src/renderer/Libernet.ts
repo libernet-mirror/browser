@@ -31,6 +31,7 @@ export interface LibernetAPI {
   navigateForward(): Promise<void>;
   startRefresh(): void;
   cancelNavigation(): void;
+  openMainMenu(): void;
   getNetworkId(): Promise<number>;
   setNetworkId(id: number): Promise<void>;
   getNodeList(): Promise<string[]>;

@@ -1,9 +1,10 @@
 import path from "node:path";
 
 import {
+  type MenuItemConstructorOptions,
   BaseWindow,
   HandlerDetails,
-  Session,
+  Menu,
   WebContents,
   WebContentsView,
 } from "electron";
@@ -17,10 +18,15 @@ import {
 import { TabDescriptor } from "./data";
 import { AccountListener, offAccountProof, onAccountProof } from "./libernet";
 
-export type TabOverrideSettings = {
-  session?: Session;
-  partition?: string;
-};
+export interface WindowHandlerDetails {
+  url: string;
+  disposition:
+    | "default"
+    | "foreground-tab"
+    | "background-tab"
+    | "new-window"
+    | "other";
+}
 
 function _normalizeFileUrl(url: string): string {
   const match = url.match(/^file:\/\/([^?#&]*)([?#&].*)?$/);
@@ -78,10 +84,11 @@ export class Tab {
   public constructor(
     private readonly _parentWindow: BaseWindow,
     private _url: string,
+    private readonly _incognito: boolean,
     private readonly _onUpdate: (descriptor: TabDescriptor) => void,
     private readonly _onStartNavigation: (tabId: number) => void,
     private readonly _onFinishNavigation: (tabId: number) => void,
-    private readonly _createWindow: (details: HandlerDetails) => void,
+    private readonly _createWindow: (details: WindowHandlerDetails) => void,
   ) {}
 
   private _triggerUpdate(): void {
@@ -152,15 +159,113 @@ export class Tab {
     view.webContents.loadURL(Tab._mapUserUrlToSystemUrl(this._url));
   }
 
+  private _handleContextMenu(view: WebContentsView): void {
+    view.webContents.on(
+      "context-menu",
+      (_, { linkURL, isEditable, editFlags }) => {
+        const items: MenuItemConstructorOptions[] = [];
+        if (linkURL) {
+          items.push(
+            {
+              label: "Open link in new tab",
+              click: () =>
+                this._createWindow({
+                  url: linkURL,
+                  disposition: "foreground-tab",
+                }),
+            },
+            {
+              label: "Open link in new window",
+              click: () =>
+                this._createWindow({
+                  url: linkURL,
+                  disposition: "new-window",
+                }),
+            },
+            {
+              type: "separator",
+            },
+          );
+        }
+        items.push(
+          { label: "Back", click: () => this.goBack() },
+          { label: "Forward", click: () => this.goForward() },
+          {
+            label: "Reload",
+            accelerator: "CommandOrControl+R",
+            click: () => this.reload(),
+          },
+          { type: "separator" },
+        );
+        if (isEditable) {
+          items.push(
+            {
+              label: "Undo",
+              accelerator: "CommandOrControl+Z",
+              enabled: editFlags.canUndo,
+              role: "undo",
+            },
+            {
+              label: "Redo",
+              accelerator: "CommandOrControl+Y",
+              enabled: editFlags.canRedo,
+              role: "redo",
+            },
+            {
+              label: "Cut",
+              accelerator: "CommandOrControl+X",
+              enabled: editFlags.canCut,
+              role: "cut",
+            },
+            {
+              label: "Copy",
+              accelerator: "CommandOrControl+C",
+              enabled: editFlags.canCopy,
+              role: "copy",
+            },
+            {
+              label: "Paste",
+              accelerator: "CommandOrControl+V",
+              enabled: editFlags.canPaste,
+              role: "paste",
+            },
+            {
+              label: "Paste as plain text",
+              accelerator: "CommandOrControl+Shift+V",
+              enabled: editFlags.canPaste,
+              role: "pasteAndMatchStyle",
+            },
+            {
+              label: "Select all",
+              accelerator: "CommandOrControl+A",
+              enabled: editFlags.canSelectAll,
+              role: "selectAll",
+            },
+            { type: "separator" },
+          );
+        }
+        items.push({
+          label: "Inspect page",
+          accelerator: "F11",
+          click: () => this._view?.webContents?.openDevTools(),
+        });
+        Menu.buildFromTemplate(items).popup({
+          window: this._parentWindow,
+        });
+      },
+    );
+  }
+
   private _createWebView(): WebContentsView {
     const view = new WebContentsView({
       webPreferences: {
         contextIsolation: true,
-        partition: "persist:libernet",
+        partition: this._incognito ? "libernet" : "persist:libernet",
         devTools: true,
       },
     });
     this._configureView(view);
+    this._handleContextMenu(view);
     return view;
   }
 
