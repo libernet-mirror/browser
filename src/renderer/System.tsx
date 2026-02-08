@@ -21,6 +21,9 @@ export const System = () => {
     case "control":
       document.title = "Libernet";
       return <ControlBar />;
+    case "control-incognito":
+      document.title = "Libernet - Incognito";
+      return <ControlBar incognito />;
     case "new":
       document.title = "New tab";
       return null;

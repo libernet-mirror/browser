@@ -132,7 +132,7 @@ export class BrowserWindow {
     }
     this._window.show();
 
-    this._controlBar = new ControlBar(this._window);
+    this._controlBar = new ControlBar(this._window, this._incognito);
 
     this._tabs = tabUrls.map((url) => this._createTab(url));
     this._currentTabIndex = 0;
@@ -164,7 +164,7 @@ export class BrowserWindow {
         label: "New window",
         accelerator: "CommandOrControl+N",
         click: () => {
-          BrowserWindow.create({});
+          BrowserWindow.create({ incognito: this._incognito });
         },
       },
       {
@@ -187,7 +187,7 @@ export class BrowserWindow {
       {
         label: "Exit",
         accelerator: "Alt+F4",
-        click: () => this.close(),
+        click: () => BrowserWindow.closeAll(),
       },
     ]);
   }
@@ -295,6 +295,12 @@ export class BrowserWindow {
       } catch {
         // ignore
       }
+    }
+  }
+
+  public static closeAll(): void {
+    for (const window of BrowserWindow._INSTANCES.slice()) {
+      window.close();
     }
   }
 

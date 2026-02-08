@@ -41,6 +41,10 @@ const plainButtonStyle = {
   neutral:
     "not-disabled:hover:bg-neutral-100 not-disabled:active:bg-neutral-200 disabled:text-neutral-300",
   blue: "not-disabled:hover:bg-blue-200 not-disabled:active:bg-blue-300 disabled:text-blue-400",
+  incognito1:
+    "not-disabled:hover:bg-gray-700 not-disabled:active:bg-gray-800 disabled:text-gray-300",
+  incognito2:
+    "not-disabled:hover:bg-gray-700 not-disabled:active:bg-gray-600 disabled:text-gray-300",
 };
 
 export type PlainButtonStyle = keyof typeof plainButtonStyle;

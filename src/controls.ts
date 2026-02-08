@@ -61,11 +61,16 @@ export class ControlBar {
     const { width } = this._parentWindow.getBounds();
     view.setBounds({ x: 0, y: 0, width, height: CONTROL_BAR_HEIGHT });
     this._parentWindow.contentView.addChildView(view);
-    view.webContents.loadURL(WEBPACK_ENTRY + "?route=control");
+    view.webContents.loadURL(
+      WEBPACK_ENTRY + `?route=control${this._incognito ? "-incognito" : ""}`,
+    );
     return view;
   }
 
-  public constructor(private readonly _parentWindow: BaseWindow) {
+  public constructor(
+    private readonly _parentWindow: BaseWindow,
+    private readonly _incognito: boolean,
+  ) {
     this._view = this._createView();
   }
 
