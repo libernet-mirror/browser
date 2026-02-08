@@ -37,33 +37,21 @@ export const SecondaryButton = ({
   </button>
 );
 
-const plainButtonStyle = {
-  neutral:
-    "not-disabled:hover:bg-neutral-100 not-disabled:active:bg-neutral-200 disabled:text-neutral-300",
-  blue: "not-disabled:hover:bg-blue-200 not-disabled:active:bg-blue-300 disabled:text-blue-400",
-  incognito1:
-    "not-disabled:hover:bg-gray-700 not-disabled:active:bg-gray-800 disabled:text-gray-300",
-  incognito2:
-    "not-disabled:hover:bg-gray-700 not-disabled:active:bg-gray-600 disabled:text-gray-300",
-};
-
-export type PlainButtonStyle = keyof typeof plainButtonStyle;
-
 export const PlainButton = ({
   className,
   round = false,
-  style = "neutral",
+  style = "not-disabled:hover:bg-neutral-100 not-disabled:active:bg-neutral-200 disabled:text-neutral-300",
   children,
   ...props
 }: Omit<ComponentPropsWithoutRef<"button">, "style"> & {
   round?: boolean;
-  style?: PlainButtonStyle;
+  style?: string;
 }) => (
   <button
     className={clsx(
       "bg-transparent p-2",
       round ? "rounded-full" : "rounded-lg",
-      plainButtonStyle[style],
+      style,
       className,
     )}
     {...props}

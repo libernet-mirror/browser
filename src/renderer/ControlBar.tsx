@@ -19,9 +19,10 @@ import { libernet } from "./Libernet";
 import { GrayedLogo, Logo } from "./Logo";
 
 interface Theme {
-  incognito: boolean;
   tabArea: string;
   navArea: string;
+  tabAreaButton: string;
+  navAreaButton: string;
   activeTabPill: string;
   inactiveTabPill: string;
   activeTabCloseButton: string;
@@ -31,9 +32,12 @@ interface Theme {
 
 const THEMES: { [name: string]: Theme } = {
   default: {
-    incognito: false,
     tabArea: "bg-blue-100",
     navArea: "bg-white",
+    tabAreaButton:
+      "not-disabled:hover:bg-blue-200 not-disabled:active:bg-blue-300 disabled:text-blue-400",
+    navAreaButton:
+      "not-disabled:hover:bg-neutral-100 not-disabled:active:bg-neutral-200 disabled:text-neutral-300",
     activeTabPill: "bg-white shadow-sm",
     inactiveTabPill: "bg-blue-100 hover:bg-blue-200 active:bg-blue-300",
     activeTabCloseButton: "hover:bg-neutral-200 active:bg-neutral-300",
@@ -42,9 +46,12 @@ const THEMES: { [name: string]: Theme } = {
       "border-neutral-100 bg-neutral-100 focus:border-blue-600 focus:bg-white",
   },
   incognito: {
-    incognito: true,
     tabArea: "bg-gray-800 text-gray-300",
     navArea: "bg-gray-600 text-gray-300",
+    tabAreaButton:
+      "not-disabled:hover:bg-gray-700 not-disabled:active:bg-gray-600 disabled:text-gray-300",
+    navAreaButton:
+      "not-disabled:hover:bg-gray-700 not-disabled:active:bg-gray-800 disabled:text-gray-300",
     activeTabPill: "bg-gray-600 shadow-sm",
     inactiveTabPill: "bg-gray-800 hover:bg-gray-700 active:bg-gray-600",
     activeTabCloseButton: "hover:bg-gray-700 active:bg-gray-800",
@@ -190,7 +197,7 @@ const Tabs = ({
       ))}
       <PlainButton
         round
-        style={theme.incognito ? "incognito2" : "blue"}
+        style={theme.tabAreaButton}
         onClick={() => libernet().addTab()}
       >
         <PlusIcon className="size-4" />
@@ -198,21 +205,21 @@ const Tabs = ({
       <span className="window-drag-area grow" />
       <PlainButton
         round
-        style={theme.incognito ? "incognito2" : "blue"}
+        style={theme.tabAreaButton}
         onClick={() => libernet().minimizeWindow()}
       >
         <MinimizeIcon className="size-4" />
       </PlainButton>
       <PlainButton
         round
-        style={theme.incognito ? "incognito2" : "blue"}
+        style={theme.tabAreaButton}
         onClick={() => libernet().maximizeWindow()}
       >
         <MaximizeIcon className="size-4" />
       </PlainButton>
       <PlainButton
         round
-        style={theme.incognito ? "incognito2" : "blue"}
+        style={theme.tabAreaButton}
         onClick={() => libernet().closeWindow()}
       >
         <CancelIcon className="size-4" />
@@ -288,7 +295,7 @@ const Navigation = ({ activeTabId }: { activeTabId: number }) => {
       <PlainButton
         round
         disabled={isSystemPage}
-        style={theme.incognito ? "incognito1" : "neutral"}
+        style={theme.navAreaButton}
         onClick={() => libernet().navigateBack()}
       >
         <LeftIcon className="size-5" />
@@ -296,14 +303,14 @@ const Navigation = ({ activeTabId }: { activeTabId: number }) => {
       <PlainButton
         round
         disabled={isSystemPage}
-        style={theme.incognito ? "incognito1" : "neutral"}
+        style={theme.navAreaButton}
         onClick={() => libernet().navigateForward()}
       >
         <RightIcon className="size-5" />
       </PlainButton>
       <PlainButton
         round
-        style={theme.incognito ? "incognito1" : "neutral"}
+        style={theme.navAreaButton}
         onClick={() => {
           if (loading) {
             libernet().cancelNavigation();
@@ -351,14 +358,14 @@ const Navigation = ({ activeTabId }: { activeTabId: number }) => {
       </div>
       <PlainButton
         round
-        style={theme.incognito ? "incognito1" : "neutral"}
+        style={theme.navAreaButton}
         onClick={() => libernet().setUrl("liber://wallet")}
       >
         <WalletIcon className="size-5" />
       </PlainButton>
       <PlainButton
         round
-        style={theme.incognito ? "incognito1" : "neutral"}
+        style={theme.navAreaButton}
         onClick={() => libernet().openMainMenu()}
       >
         <DotsIcon className="size-5" />
