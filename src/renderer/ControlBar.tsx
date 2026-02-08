@@ -1,5 +1,5 @@
 import { clsx } from "clsx";
-import { useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 import { TabDescriptor } from "../data";
 
@@ -17,6 +17,51 @@ import { WalletIcon } from "./icons/Wallet";
 
 import { libernet } from "./Libernet";
 import { GrayedLogo, Logo } from "./Logo";
+
+interface Theme {
+  tabArea: string;
+  navArea: string;
+  tabAreaButton: string;
+  navAreaButton: string;
+  activeTabPill: string;
+  inactiveTabPill: string;
+  activeTabCloseButton: string;
+  inactiveTabCloseButton: string;
+  addressBar: string;
+}
+
+const THEMES: { [name: string]: Theme } = {
+  default: {
+    tabArea: "bg-blue-100",
+    navArea: "bg-white",
+    tabAreaButton:
+      "not-disabled:hover:bg-blue-200 not-disabled:active:bg-blue-300 disabled:text-blue-400",
+    navAreaButton:
+      "not-disabled:hover:bg-neutral-100 not-disabled:active:bg-neutral-200 disabled:text-neutral-300",
+    activeTabPill: "bg-white shadow-sm",
+    inactiveTabPill: "bg-blue-100 hover:bg-blue-200 active:bg-blue-300",
+    activeTabCloseButton: "hover:bg-neutral-200 active:bg-neutral-300",
+    inactiveTabCloseButton: "hover:bg-blue-300 active:bg-blue-400",
+    addressBar:
+      "border-neutral-100 bg-neutral-100 focus:border-blue-600 focus:bg-white",
+  },
+  incognito: {
+    tabArea: "bg-gray-800 text-gray-300",
+    navArea: "bg-gray-600 text-gray-300",
+    tabAreaButton:
+      "not-disabled:hover:bg-gray-700 not-disabled:active:bg-gray-600 disabled:text-gray-300",
+    navAreaButton:
+      "not-disabled:hover:bg-gray-700 not-disabled:active:bg-gray-800 disabled:text-gray-300",
+    activeTabPill: "bg-gray-600 shadow-sm",
+    inactiveTabPill: "bg-gray-800 hover:bg-gray-700 active:bg-gray-600",
+    activeTabCloseButton: "hover:bg-gray-700 active:bg-gray-800",
+    inactiveTabCloseButton: "hover:bg-gray-600 active:bg-gray-500",
+    addressBar:
+      "border-gray-700 bg-gray-700 focus:border-gray-300 focus:bg-gray-600",
+  },
+};
+
+const ThemeContext = createContext(THEMES.default);
 
 const FavIcon = ({
   src,
@@ -52,6 +97,7 @@ const TabPill = ({
   tab: TabDescriptor;
   active?: boolean;
 }) => {
+  const theme = useContext(ThemeContext);
   const [loading, setLoading] = useState(false);
   useEffect(() => {
     let cancelled = false;
@@ -88,9 +134,7 @@ const TabPill = ({
     <div
       className={clsx(
         "mr-1 flex w-50 min-w-15 flex-row gap-x-2 overflow-hidden rounded-md px-2 py-1 text-sm text-nowrap rtl:flex-row-reverse",
-        active
-          ? "bg-white shadow-sm"
-          : "bg-blue-100 hover:bg-blue-200 active:bg-blue-300",
+        active ? theme.activeTabPill : theme.inactiveTabPill,
       )}
       onClick={({ button }) => {
         if (!active && button !== 1) {
@@ -120,9 +164,7 @@ const TabPill = ({
       <button
         className={clsx(
           "my-auto rounded-full bg-transparent p-0.5",
-          active
-            ? "hover:bg-neutral-200 active:bg-neutral-300"
-            : "hover:bg-blue-300 active:bg-blue-400",
+          active ? theme.activeTabCloseButton : theme.inactiveTabCloseButton,
         )}
         onClick={(e) => {
           e.stopPropagation();
@@ -141,28 +183,54 @@ const Tabs = ({
 }: {
   tabs: TabDescriptor[];
   activeTabId: number;
-}) => (
-  <div className="window-drag-area flex w-full overflow-hidden bg-blue-100 p-1 align-middle">
-    {tabs.map((tab) => (
-      <TabPill key={tab.id} tab={tab} active={tab.id === activeTabId} />
-    ))}
-    <PlainButton round style="blue" onClick={() => libernet().addTab()}>
-      <PlusIcon className="size-4" />
-    </PlainButton>
-    <span className="window-drag-area grow" />
-    <PlainButton round style="blue" onClick={() => libernet().minimizeWindow()}>
-      <MinimizeIcon className="size-4" />
-    </PlainButton>
-    <PlainButton round style="blue" onClick={() => libernet().maximizeWindow()}>
-      <MaximizeIcon className="size-4" />
-    </PlainButton>
-    <PlainButton round style="blue" onClick={() => libernet().closeWindow()}>
-      <CancelIcon className="size-4" />
-    </PlainButton>
-  </div>
-);
+}) => {
+  const theme = useContext(ThemeContext);
+  return (
+    <div
+      className={clsx(
+        "window-drag-area flex w-full overflow-hidden p-1 align-middle",
+        theme.tabArea,
+      )}
+    >
+      {tabs.map((tab) => (
+        <TabPill key={tab.id} tab={tab} active={tab.id === activeTabId} />
+      ))}
+      <PlainButton
+        round
+        style={theme.tabAreaButton}
+        onClick={() => libernet().addTab()}
+      >
+        <PlusIcon className="size-4" />
+      </PlainButton>
+      <span className="window-drag-area grow" />
+      <PlainButton
+        round
+        style={theme.tabAreaButton}
+        onClick={() => libernet().minimizeWindow()}
+      >
+        <MinimizeIcon className="size-4" />
+      </PlainButton>
+      <PlainButton
+        round
+        style={theme.tabAreaButton}
+        onClick={() => libernet().maximizeWindow()}
+      >
+        <MaximizeIcon className="size-4" />
+      </PlainButton>
+      <PlainButton
+        round
+        style={theme.tabAreaButton}
+        onClick={() => libernet().closeWindow()}
+      >
+        <CancelIcon className="size-4" />
+      </PlainButton>
+    </div>
+  );
+};
 
 const Navigation = ({ activeTabId }: { activeTabId: number }) => {
+  const theme = useContext(ThemeContext);
+
   const [url, setUrl] = useState("");
   const [urlOverride, setUrlOverride] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -218,10 +286,16 @@ const Navigation = ({ activeTabId }: { activeTabId: number }) => {
   }, [activeTabId]);
 
   return (
-    <div className="flex w-full gap-2 overflow-hidden px-2 py-1 shadow-sm">
+    <div
+      className={clsx(
+        "flex w-full gap-2 overflow-hidden px-2 py-1 shadow-sm",
+        theme.navArea,
+      )}
+    >
       <PlainButton
         round
         disabled={isSystemPage}
+        style={theme.navAreaButton}
         onClick={() => libernet().navigateBack()}
       >
         <LeftIcon className="size-5" />
@@ -229,12 +303,14 @@ const Navigation = ({ activeTabId }: { activeTabId: number }) => {
       <PlainButton
         round
         disabled={isSystemPage}
+        style={theme.navAreaButton}
         onClick={() => libernet().navigateForward()}
       >
         <RightIcon className="size-5" />
       </PlainButton>
       <PlainButton
         round
+        style={theme.navAreaButton}
         onClick={() => {
           if (loading) {
             libernet().cancelNavigation();
@@ -260,7 +336,10 @@ const Navigation = ({ activeTabId }: { activeTabId: number }) => {
         >
           <input
             type="text"
-            className="w-full rounded-md border-2 border-neutral-100 bg-neutral-100 px-3 py-1 outline-none focus:border-blue-600 focus:bg-white"
+            className={clsx(
+              "w-full rounded-md border-2 px-3 py-1 outline-none",
+              theme.addressBar,
+            )}
             placeholder="Type a URL"
             value={shownUrl}
             onChange={({ target }) => setUrlOverride(target.value)}
@@ -277,17 +356,25 @@ const Navigation = ({ activeTabId }: { activeTabId: number }) => {
           />
         </form>
       </div>
-      <PlainButton round onClick={() => libernet().setUrl("liber://wallet")}>
+      <PlainButton
+        round
+        style={theme.navAreaButton}
+        onClick={() => libernet().setUrl("liber://wallet")}
+      >
         <WalletIcon className="size-5" />
       </PlainButton>
-      <PlainButton round onClick={() => libernet().openMainMenu()}>
+      <PlainButton
+        round
+        style={theme.navAreaButton}
+        onClick={() => libernet().openMainMenu()}
+      >
         <DotsIcon className="size-5" />
       </PlainButton>
     </div>
   );
 };
 
-export const ControlBar = () => {
+export const ControlBar = ({ incognito = false }: { incognito?: boolean }) => {
   const [tabs, setTabs] = useState<TabDescriptor[]>([]);
   const [activeTabId, setActiveTabId] = useState(0);
 
@@ -318,9 +405,11 @@ export const ControlBar = () => {
   }, []);
 
   return (
-    <>
+    <ThemeContext.Provider
+      value={incognito ? THEMES.incognito : THEMES.default}
+    >
       <Tabs tabs={tabs} activeTabId={activeTabId} />
       <Navigation activeTabId={activeTabId} />
-    </>
+    </ThemeContext.Provider>
   );
 };
