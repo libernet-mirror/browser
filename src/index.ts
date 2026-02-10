@@ -15,7 +15,9 @@ import {
 import {
   DNS_NAME_PATTERN,
   DNS_PREFIX_PATTERN,
+  PROTOCOL_VERSION,
   URL_PREFIX_PATTERN,
+  VERSION_PATTERN,
 } from "./constants";
 import {
   getBootstrapNodes,
@@ -57,19 +59,40 @@ app.on("activate", async () => {
 // In this file you can include the rest of your app's specific main process code. You can also put
 // them in separate files and import them here.
 
-import { Mutex } from "./mutex";
-import { Wallet, WalletData } from "./wallet";
 import {
   type TransactionPayload,
   type TransactionQueryParams,
   type TransactionType,
+  ProtocolVersion,
 } from "./data";
+import { Mutex } from "./mutex";
+import { Wallet, WalletData } from "./wallet";
 
 const walletFileMutex = new Mutex();
+
+function parseVersion(version: string): ProtocolVersion {
+  const match = version.match(VERSION_PATTERN);
+  if (!match) {
+    throw new Error(`invalid browser version: ${JSON.stringify(version)}`);
+  }
+  return new ProtocolVersion(
+    parseInt(match[1], 10),
+    parseInt(match[2], 10),
+    parseInt(match[3], 10),
+  );
+}
 
 function getWalletPath(): string {
   return path.join(app.getPath("userData"), "wallet.json");
 }
+
+ipcMain.handle("root/get-browser-version", () =>
+  parseVersion(app.getVersion()),
+);
+
+ipcMain.handle("root/get-nodejs-version", () => parseVersion(process.version));
+
+ipcMain.handle("root/get-protocol-version", () => PROTOCOL_VERSION);
 
 ipcMain.handle("settings/get-home-page", () => getHomeAddress());
 

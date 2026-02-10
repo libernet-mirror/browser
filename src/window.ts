@@ -181,6 +181,15 @@ export class BrowserWindow {
       },
       { type: "separator" },
       {
+        label: "Help",
+        submenu: [
+          {
+            label: "About...",
+            click: () => this.addTab("liber://about"),
+          },
+        ],
+      },
+      {
         label: "Settings",
         click: () => this.addTab("liber://settings"),
       },

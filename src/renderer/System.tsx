@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 
+import { Page as AboutPage } from "./About";
 import { ControlBar } from "./ControlBar";
 import { Page as SettingsPage } from "./Settings";
 import { Page as WalletPage } from "./Wallet";
@@ -18,6 +19,9 @@ export const System = () => {
     }
   }, []);
   switch (view) {
+    case "about":
+      document.title = "About LiberBrowser";
+      return <AboutPage />;
     case "control":
       document.title = "Libernet";
       return <ControlBar />;

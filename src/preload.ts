@@ -51,6 +51,9 @@ type UrlListener = (url: string) => void;
 type AccountListener = (account: AccountInfo) => void;
 
 contextBridge.exposeInMainWorld("libernet", {
+  getBrowserVersion: () => ipcRenderer.invoke("root/get-browser-version"),
+  getNodeJSVersion: () => ipcRenderer.invoke("root/get-nodejs-version"),
+  getProtocolVersion: () => ipcRenderer.invoke("root/get-protocol-version"),
   getHomePage: () => ipcRenderer.invoke("settings/get-home-page"),
   setHomePage: (homePage: string) =>
     ipcRenderer.invoke("settings/set-home-page", homePage),
