@@ -15,10 +15,9 @@ export const INITIAL_WIDTH = 800;
 export const INITIAL_HEIGHT = 600;
 export const CONTROL_BAR_HEIGHT = 85;
 
-export const SYSTEM_URL_SETTINGS = "liber://settings";
-export const SYSTEM_URL_WALLET = "liber://wallet";
-
 export const DEFAULT_SEARCH_ENGINE = "https://www.google.com/search?q=$QUERY$";
+
+export const VERSION_PATTERN = /^v?([0-9]+)\.([0-9]+)\.([0-9]+)$/;
 
 export const URL_PREFIX_PATTERN =
   /^([a-z]+):\/\/(([_a-z0-9-]+(?:\.[_a-z0-9-]+)*)(?::([0-9]+))?(?:\/.*)?)$/i;

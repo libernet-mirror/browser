@@ -1,5 +1,6 @@
 import {
   type AccountInfo,
+  type ProtocolVersion,
   type TabDescriptor,
   type TransactionInfo,
   type TransactionPayload,
@@ -8,6 +9,9 @@ import {
 } from "../data";
 
 export interface LibernetAPI {
+  getBrowserVersion(): Promise<ProtocolVersion>;
+  getNodeJSVersion(): Promise<ProtocolVersion>;
+  getProtocolVersion(): Promise<ProtocolVersion>;
   getHomePage(): Promise<string>;
   setHomePage(homePage: string): Promise<string>;
   minimizeWindow(): Promise<void>;
