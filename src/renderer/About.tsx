@@ -34,8 +34,9 @@ export const Page = () => {
       <p>
         Released under the{" "}
         <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank">
-          Apache license 2.0.
+          Apache license 2.0
         </a>
+        .
       </p>
       <p>
         Copyright 2025 the Libernet Team.{" "}
