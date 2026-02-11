@@ -72,7 +72,7 @@ jobs:
       - name: "Install the wasm-bindgen CLI"
         # NOTE: the version of wasm-bindgen-cli must match *exactly* the version of wasm-bindgen
         # that the crypto crate depends on.
-        run: cargo install wasm-bindgen-cli --version 0.2.103
+        run: cargo install wasm-bindgen-cli --version 0.2.108
 
       - name: "Clone the repository"
         uses: actions/checkout@v6
