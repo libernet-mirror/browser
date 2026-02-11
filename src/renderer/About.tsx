@@ -31,6 +31,23 @@ export const Page = () => {
         </span>
         LiberBrowser
       </h1>
+      <p>
+        Released under the{" "}
+        <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank">
+          Apache license 2.0
+        </a>
+        .
+      </p>
+      <p>
+        Copyright 2025 the Libernet Team.{" "}
+        <a href="https://libernet.xyz/">https://libernet.xyz/</a>
+      </p>
+      <p>
+        Source available on GitHub:{" "}
+        <a href="https://github.com/libernet-mirror/browser" target="_blank">
+          https://github.com/libernet-mirror/browser
+        </a>
+      </p>
       <table>
         <tbody>
           <tr>
