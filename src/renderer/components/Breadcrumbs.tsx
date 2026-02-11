@@ -1,8 +1,7 @@
 import { clsx } from "clsx";
 import { type PropsWithChildren } from "react";
 
-import { GreaterIcon } from "../icons/Greater";
-import { HomeIcon } from "../icons/Home";
+import { GreaterThanIcon, HomeIcon } from "./Icons";
 
 export const Breadcrumbs = ({
   children,
@@ -34,7 +33,7 @@ export const BreadcrumbItem = ({
     {home ? (
       <HomeIcon className="me-1.5 size-4" />
     ) : (
-      <GreaterIcon className="me-1.5 size-4" />
+      <GreaterThanIcon className="me-1.5 size-4" />
     )}
     {children}
   </li>

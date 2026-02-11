@@ -4,16 +4,18 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { TabDescriptor } from "../data";
 
 import { PlainButton } from "./components/Buttons";
-import { CancelIcon } from "./icons/Cancel";
-import { DotsIcon } from "./icons/Dots";
-import { LeftIcon } from "./icons/Left";
-import { MaximizeIcon } from "./icons/Maximize";
-import { MinimizeIcon } from "./icons/Minimize";
-import { PlusIcon } from "./icons/Plus";
-import { RefreshIcon } from "./icons/Refresh";
-import { RightIcon } from "./icons/Right";
-import { SpinnerIcon } from "./icons/Spinner";
-import { WalletIcon } from "./icons/Wallet";
+import {
+  CancelIcon,
+  DotsIcon,
+  LeftIcon,
+  MaximizeIcon,
+  MinimizeIcon,
+  PlusIcon,
+  RefreshIcon,
+  RightIcon,
+  WalletIcon,
+} from "./components/Icons";
+import { SpinnerIcon } from "./components/Spinner";
 
 import { libernet } from "./Libernet";
 import { GrayedLogo, Logo } from "./Logo";

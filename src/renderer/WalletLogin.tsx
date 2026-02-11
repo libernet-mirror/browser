@@ -2,9 +2,9 @@ import { clsx } from "clsx";
 import { useMemo, useState } from "react";
 
 import { PlainButton, PrimaryButton } from "./components/Buttons";
+import { EyeIcon } from "./components/Icons";
 import { Input } from "./components/Input";
-import { EyeIcon } from "./icons/Eyes";
-import { SpinnerIcon } from "./icons/Spinner";
+import { SpinnerIcon } from "./components/Spinner";
 
 export const Page = ({
   onSubmit,
