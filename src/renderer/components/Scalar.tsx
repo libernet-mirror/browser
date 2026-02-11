@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { CopyIcon } from "../icons/Copy";
+import { CopyIcon } from "./Icons";
 import { Tooltip, TooltipContainer } from "./Tooltip";
 
 export const Scalar = ({

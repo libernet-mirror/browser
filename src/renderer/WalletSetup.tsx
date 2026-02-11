@@ -4,11 +4,9 @@ import { clsx } from "clsx";
 
 import { PlainButton, PrimaryButton } from "./components/Buttons";
 import { Card } from "./components/Card";
+import { EyeIcon, EyeSlashIcon, MinusIcon, PlusIcon } from "./components/Icons";
 import { Input, ValidationError } from "./components/Input";
-import { EyeIcon, EyeSlashIcon } from "./icons/Eyes";
-import { MinusIcon } from "./icons/Minus";
-import { PlusIcon } from "./icons/Plus";
-import { SpinnerIcon } from "./icons/Spinner";
+import { SpinnerIcon } from "./components/Spinner";
 
 import { libernet } from "./Libernet";
 import { MAX_WALLET_PASSWORDS } from "./Utilities";

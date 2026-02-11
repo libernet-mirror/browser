@@ -17,8 +17,10 @@ import {
   DropdownItem,
   DropdownMenu,
 } from "./components/Dropdown";
+import { LeftIcon, PlusIcon, RightIcon } from "./components/Icons";
 import { ValidatedInput } from "./components/Input";
 import { Scalar } from "./components/Scalar";
+import { SpinnerIcon } from "./components/Spinner";
 import {
   Table,
   TableBody,
@@ -28,10 +30,6 @@ import {
   TableRow,
 } from "./components/Tables";
 import { Tooltip, TooltipContainer } from "./components/Tooltip";
-import { LeftIcon } from "./icons/Left";
-import { PlusIcon } from "./icons/Plus";
-import { RightIcon } from "./icons/Right";
-import { SpinnerIcon } from "./icons/Spinner";
 
 import { jazzicon } from "./Jazzicon";
 import { libernet } from "./Libernet";

@@ -3,10 +3,9 @@ import { PropsWithChildren, useState } from "react";
 
 import { PrimaryButton } from "./components/Buttons";
 import { Card } from "./components/Card";
+import { GearIcon, NetworkIcon } from "./components/Icons";
 import { Input, TextArea } from "./components/Input";
-import { GearIcon } from "./icons/Gear";
-import { NetworkIcon } from "./icons/Network";
-import { SpinnerIcon } from "./icons/Spinner";
+import { SpinnerIcon } from "./components/Spinner";
 
 import { libernet } from "./Libernet";
 import { useAsyncEffect } from "./Utilities";
