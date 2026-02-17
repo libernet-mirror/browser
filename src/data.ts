@@ -1,6 +1,22 @@
 // NOTE: this module is imported by both the main process and the renderer process, so all
 // definitions here must be runnable in both and therefore must not use Node.js stuff.
 
+export interface NodeDescriptor {
+  address: string;
+  port: number;
+}
+
+export type NodeList = NodeDescriptor[];
+
+export interface NetworkDescriptor {
+  chainId: number;
+  nodes: NodeList;
+}
+
+export type NetworkList = {
+  [networkName: string]: NetworkDescriptor;
+};
+
 export interface TabDescriptor {
   id: number;
   title: string;
