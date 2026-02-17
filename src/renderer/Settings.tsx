@@ -100,7 +100,13 @@ const GeneralSettings = () => {
   );
 };
 
-const NetworkIdField = () => (
+const NetworkIdField = ({
+  onChanging,
+  onChanged,
+}: {
+  onChanging: () => void;
+  onChanged: (newId: number) => void;
+}) => (
   <InputField
     description="Network ID"
     fetchValue={async () => "" + (await libernet().getNetworkId())}
@@ -109,13 +115,16 @@ const NetworkIdField = () => (
         throw new Error("invalid network ID");
       }
       const value = parseInt(networkId, 10);
+      onChanging();
       await libernet().setNetworkId(value);
+      onChanged(value);
       return "" + value;
     }}
   />
 );
 
 const NetworkSettings = () => {
+  const [networkId, setNetworkId] = useState<number | null>(null);
   const [addresses, setAddresses] = useState<string[]>([]);
   const [text, setText] = useState<string | null>(null);
 
@@ -123,25 +132,33 @@ const NetworkSettings = () => {
   const [saving, setSaving] = useState(false);
 
   useAsyncEffect(async () => {
-    setAddresses(await libernet().getNodeList());
+    setNetworkId(await libernet().getNetworkId());
   }, []);
+
+  useAsyncEffect(async () => {
+    setAddresses(await libernet().getNodeList(networkId));
+  }, [networkId]);
 
   return (
     <>
       <PageTitle>Network Settings</PageTitle>
       <form
         className="mt-2 flex flex-col gap-2"
-        onSubmit={async () => {
+        onSubmit={async (e) => {
+          e.preventDefault();
           setSaving(true);
           try {
-            await libernet().setNodeList(addresses);
+            await libernet().setNodeList(networkId, addresses);
           } finally {
             setDirty(false);
             setSaving(false);
           }
         }}
       >
-        <NetworkIdField />
+        <NetworkIdField
+          onChanging={() => setAddresses([])}
+          onChanged={(newId: number) => setNetworkId(newId)}
+        />
         <label>
           Enter the list of known Libernet nodes, one per line.
           <TextArea
