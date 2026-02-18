@@ -105,39 +105,53 @@ jobs:
         if: runner.os != 'Windows'
         shell: bash
         run: |
+          set -euo pipefail
+
           VERSION=${{ github.ref_name }}
+          TARGET="${{ matrix.os }}-${{ matrix.arch }}"
+
+          mkdir -p release
+          shopt -s globstar nullglob
+
           case "${{ matrix.os }}-${{ matrix.arch }}" in
             linux-x64)
-              mv out/make/**/*.deb release/libernet-browser-${VERSION}-linux-x64.deb || true
-              mv out/make/**/*.rpm release/libernet-browser-${VERSION}-linux-x64.rpm || true
+              mv out/make/**/*.deb release/libernet-browser-${VERSION}-${TARGET}.deb || true
+              mv out/make/**/*.rpm release/libernet-browser-${VERSION}-${TARGET}.rpm || true
               ;;
             linux-arm64)
-              mv out/make/**/*.deb release/libernet-browser-${VERSION}-linux-arm64.deb || true
-              mv out/make/**/*.rpm release/libernet-browser-${VERSION}-linux-arm64.rpm || true
+              mv out/make/**/*.deb release/libernet-browser-${VERSION}-${TARGET}.deb || true
+              mv out/make/**/*.rpm release/libernet-browser-${VERSION}-${TARGET}.rpm || true
               ;;
             macos-x64)
-              mv out/make/**/*.zip release/libernet-browser-${VERSION}-macos-x64.zip || true
+              mv out/make/**/*.zip release/libernet-browser-${VERSION}-${TARGET}.zip || true
               ;;
             macos-arm64)
-              mv out/make/**/*.zip release/libernet-browser-${VERSION}-macos-arm64.zip || true
+              mv out/make/**/*.zip release/libernet-browser-${VERSION}-${TARGET}.zip || true
               ;;
           esac
+
+          echo "Final release contents:"
+          ls -l release
 
       - name: Normalize artifact filenames (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           $version = "${{ github.ref_name }}"
+          $releaseDir = "release"
+
+          New-Item -ItemType Directory -Force -Path $releaseDir | Out-Null
 
           $exe = Get-ChildItem -Recurse -Filter *.exe | Where-Object { $_.FullName -like "*out\make*" }
-          if ($exe) {
-            Rename-Item $exe.FullName "release\libernet-$version-windows-x64.exe"
-          }
+          if (-not $exe) { throw "No .exe installer found" }
+          Move-Item $exe.FullName "$releaseDir\libernet-$version-windows-x64.exe"
 
           $nupkg = Get-ChildItem -Recurse -Filter *.nupkg | Where-Object { $_.FullName -like "*out\make*" }
-          if ($nupkg) {
-            Rename-Item $nupkg.FullName "release\libernet-$version-windows-x64.nupkg"
-          }
+          if (-not $nupkg) { throw "No .nupkg file found" }
+          Move-Item $nupkg.FullName "$releaseDir\libernet-$version-windows-x64.nupkg"
+
+          Write-Host "Final release contents:"
+          Get-ChildItem $releaseDir
 
       - name: "Upload the build artifacts"
         uses: actions/upload-artifact@v4
