@@ -1,6 +1,7 @@
 ## Prerequisites
 
-You need [Node.js](https://nodejs.org/), [Rust](https://www.rust-lang.org/), and
+You need [Node.js](https://nodejs.org/), [Rust](https://www.rust-lang.org/),
+[Clang](https://clang.llvm.org/), and
 [`wasm-bindgen-cli`](https://crates.io/crates/wasm-bindgen-cli).
 
 ## Building and Running
