@@ -101,6 +101,44 @@ jobs:
       - name: "Make the Electron distributables"
         run: npm run make
 
+      - name: "Normalize artifact filenames (Linux + MacOS)"
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          VERSION=${{ github.ref_name }}
+          case "${{ matrix.os }}-${{ matrix.arch }}" in
+            linux-x64)
+              mv out/make/**/*.deb libernet-browser-${VERSION}-linux-x64.deb || true
+              mv out/make/**/*.rpm libernet-browser-${VERSION}-linux-x64.rpm || true
+              ;;
+            linux-arm64)
+              mv out/make/**/*.deb libernet-browser-${VERSION}-linux-arm64.deb || true
+              mv out/make/**/*.rpm libernet-browser-${VERSION}-linux-arm64.rpm || true
+              ;;
+            macos-x64)
+              mv out/make/**/*.zip libernet-browser-${VERSION}-macos-x64.zip || true
+              ;;
+            macos-arm64)
+              mv out/make/**/*.zip libernet-browser-${VERSION}-macos-arm64.zip || true
+              ;;
+          esac
+
+      - name: Normalize artifact filenames (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}"
+
+          $exe = Get-ChildItem -Recurse -Filter *.exe | Where-Object { $_.FullName -like "*out\make*" }
+          if ($exe) {
+            Rename-Item $exe.FullName "libernet-$version-windows-x64.exe"
+          }
+
+          $nupkg = Get-ChildItem -Recurse -Filter *.nupkg | Where-Object { $_.FullName -like "*out\make*" }
+          if ($nupkg) {
+            Rename-Item $nupkg.FullName "libernet-$version-windows-x64.nupkg"
+          }
+
       - name: "Upload the build artifacts"
         uses: actions/upload-artifact@v4
         with:
@@ -117,5 +155,5 @@ jobs:
           files: |
             out/make/**
             LICENSE
-          overwrite_files: true
+          overwrite_files: false
           make_latest: true
