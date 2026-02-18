@@ -107,26 +107,33 @@ jobs:
         run: |
           set -euo pipefail
 
-          VERSION=${{ github.ref_name }}
+          VERSION="${{ github.ref_name }}"
           TARGET="${{ matrix.os }}-${{ matrix.arch }}"
 
           mkdir -p release
-          shopt -s globstar nullglob
 
-          case "${{ matrix.os }}-${{ matrix.arch }}" in
-            linux-x64)
-              mv out/make/**/*.deb release/libernet-browser-${VERSION}-${TARGET}.deb || true
-              mv out/make/**/*.rpm release/libernet-browser-${VERSION}-${TARGET}.rpm || true
+          case "$TARGET" in
+            linux-x64|linux-arm64)
+              DEB_FILE=$(find out/make -type f -name "*.deb" -print -quit)
+              RPM_FILE=$(find out/make -type f -name "*.rpm" -print -quit)
+
+              if [ -n "${DEB_FILE:-}" ]; then
+                mv "$DEB_FILE" "release/libernet-browser-${VERSION}-${TARGET}.deb"
+              fi
+
+              if [ -n "${RPM_FILE:-}" ]; then
+                mv "$RPM_FILE" "release/libernet-browser-${VERSION}-${TARGET}.rpm"
+              fi
               ;;
-            linux-arm64)
-              mv out/make/**/*.deb release/libernet-browser-${VERSION}-${TARGET}.deb || true
-              mv out/make/**/*.rpm release/libernet-browser-${VERSION}-${TARGET}.rpm || true
-              ;;
-            macos-x64)
-              mv out/make/**/*.zip release/libernet-browser-${VERSION}-${TARGET}.zip || true
-              ;;
-            macos-arm64)
-              mv out/make/**/*.zip release/libernet-browser-${VERSION}-${TARGET}.zip || true
+            macos-x64|macos-arm64)
+              ZIP_FILE=$(find out/make -type f -name "*.zip" -print -quit)
+
+              if [ -z "${ZIP_FILE:-}" ]; then
+                echo "MacOS build artifact not found"
+                exit 1
+              fi
+
+              mv "$ZIP_FILE" "release/libernet-browser-${VERSION}-${TARGET}.zip"
               ;;
           esac
 
