@@ -205,5 +205,4 @@ jobs:
           files: |
             artifacts/**/libernet-browser-*
             artifacts/LICENSE
-          overwrite_files: true
           make_latest: true
