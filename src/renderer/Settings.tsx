@@ -57,6 +57,9 @@ const InputField = ({
         }}
         onChange={({ target: { value } }) => setValue(value)}
         onBlur={async ({ target }) => {
+          if (target.value === previousValue) {
+            return;
+          }
           let value;
           try {
             value = await updateValue(target.value);
@@ -65,11 +68,7 @@ const InputField = ({
             return;
           }
           setValue(value);
-          if (value !== previousValue) {
-            setValidation("");
-          } else {
-            setValidation(null);
-          }
+          setValidation("");
         }}
       />
     </label>
@@ -137,6 +136,8 @@ const NetworkSettings = () => {
 
   useAsyncEffect(async () => {
     setAddresses(await libernet().getNodeList(networkId));
+    setText(null);
+    setDirty(false);
   }, [networkId]);
 
   return (
@@ -172,15 +173,17 @@ const NetworkSettings = () => {
             onFocus={() => setText(addresses.join("\n"))}
             onChange={({ target }) => setText(target.value)}
             onBlur={() => {
-              setAddresses(
-                (text ?? "")
-                  .split("\n")
-                  .map((address) => address.trim())
-                  .filter((address) => !!address)
-                  .sort(),
-              );
-              setText(null);
-              setDirty(true);
+              if (text !== null) {
+                setAddresses(
+                  text
+                    .split("\n")
+                    .map((address) => address.trim())
+                    .filter((address) => !!address)
+                    .sort(),
+                );
+                setText(null);
+                setDirty(true);
+              }
             }}
           />
         </label>
