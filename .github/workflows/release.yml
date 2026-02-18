@@ -170,6 +170,7 @@ jobs:
       - name: "Upload the build artifacts"
         uses: actions/upload-artifact@v4
         with:
+          name: artifacts-${{ matrix.os }}-${{ matrix.arch }}
           path: release/*
           overwrite: true
 
@@ -197,4 +198,5 @@ jobs:
           name: Release ${{ github.ref_name }}
           generate_release_notes: true
           files: artifacts/**/*
+          overwrite_files: true
           make_latest: true
