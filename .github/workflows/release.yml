@@ -111,6 +111,7 @@ jobs:
           TARGET="${{ matrix.os }}-${{ matrix.arch }}"
 
           mkdir -p release
+          cp LICENSE release/LICENSE
 
           case "$TARGET" in
             linux-x64|linux-arm64)
@@ -145,25 +146,24 @@ jobs:
         shell: pwsh
         run: |
           $version = "${{ github.ref_name }}"
-          $releaseDir = "release"
 
-          New-Item -ItemType Directory -Force -Path $releaseDir | Out-Null
+          New-Item -ItemType Directory -Force -Path release | Out-Null
+          Copy-Item -Path LICENSE -Destination release\LICENSE -Force
 
           $exe = Get-ChildItem -Recurse -Filter *.exe | Where-Object { $_.FullName -like "*out\make*" }
           if (-not $exe) { throw "No .exe installer found" }
-          Move-Item $exe.FullName "$releaseDir\libernet-$version-windows-x64.exe"
+          Move-Item $exe.FullName "release\libernet-$version-windows-x64.exe"
 
           $nupkg = Get-ChildItem -Recurse -Filter *.nupkg | Where-Object { $_.FullName -like "*out\make*" }
           if (-not $nupkg) { throw "No .nupkg file found" }
-          Move-Item $nupkg.FullName "$releaseDir\libernet-$version-windows-x64.nupkg"
+          Move-Item $nupkg.FullName "release\libernet-$version-windows-x64.nupkg"
 
           Write-Host "Final release contents:"
-          Get-ChildItem $releaseDir
+          Get-ChildItem release
 
       - name: "Upload the build artifacts"
         uses: actions/upload-artifact@v4
         with:
-          name: libernet-browser-${{ github.ref_name }}-${{ matrix.os }}-${{ matrix.arch }}
           path: release/*
           overwrite: true
 
