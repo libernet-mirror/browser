@@ -77,7 +77,6 @@ jobs:
       - name: "Clone the repository"
         uses: actions/checkout@v6
         with:
-          ref: main
           submodules: recursive
 
       - name: "Install Node dependencies"
@@ -111,7 +110,6 @@ jobs:
           TARGET="${{ matrix.os }}-${{ matrix.arch }}"
 
           mkdir -p release
-          cp LICENSE release/LICENSE
 
           case "$TARGET" in
             linux-x64|linux-arm64)
@@ -148,21 +146,20 @@ jobs:
           $version = "${{ github.ref_name }}"
 
           New-Item -ItemType Directory -Force -Path release | Out-Null
-          Copy-Item -Path LICENSE -Destination release\LICENSE -Force
 
           $exe = Get-ChildItem -Recurse -Filter *.exe |
                  Where-Object { $_.FullName -like "*out\make*" } |
                  Select-Object -First 1
 
           if (-not $exe) { throw "No .exe installer found" }
-          Move-Item $exe.FullName "release\libernet-$version-windows-x64.exe"
+          Move-Item $exe.FullName "release\libernet-browser-$version-windows-x64.exe"
 
           $nupkg = Get-ChildItem -Recurse -Filter *.nupkg |
                    Where-Object { $_.FullName -like "*out\make*" } |
                    Select-Object -First 1
 
           if (-not $nupkg) { throw "No .nupkg file found" }
-          Move-Item $nupkg.FullName "release\libernet-$version-windows-x64.nupkg"
+          Move-Item $nupkg.FullName "release\libernet-browser-$version-windows-x64.nupkg"
 
           Write-Host "Final release contents:"
           Get-ChildItem release
@@ -170,7 +167,7 @@ jobs:
       - name: "Upload the build artifacts"
         uses: actions/upload-artifact@v4
         with:
-          name: artifacts-${{ matrix.os }}-${{ matrix.arch }}
+          name: artifact-${{ matrix.os }}-${{ matrix.arch }}
           path: release/*
           overwrite: true
 
@@ -188,6 +185,14 @@ jobs:
         with:
           path: artifacts
 
+      - name: "Clone the repository"
+        uses: actions/checkout@v6
+        with:
+          path: browser
+
+      - name: "Copy the LICENSE file"
+        run: cp browser/LICENSE artifacts/LICENSE
+
       - name: "Display structure"
         run: ls -Ral artifacts
 
@@ -197,6 +202,7 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
           generate_release_notes: true
-          files: artifacts/**/*
-          overwrite_files: true
+          files: |
+            artifacts/**/libernet-browser-*
+            artifacts/LICENSE
           make_latest: true
