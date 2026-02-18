@@ -2,7 +2,11 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import { app } from "electron";
+
+import { NetworkDescriptor, NetworkList, NodeList } from "./data";
 import { Mutex } from "./mutex";
+
+import DEFAULT_NETWORK_LIST from "../bootstrap/nodes.json";
 
 interface Config {
   window?: {
@@ -14,6 +18,7 @@ interface Config {
   };
   homeAddress?: string;
   networkId?: number;
+  networkList?: NetworkList;
 }
 
 const DEFAULT_WINDOW_X: number | null = null;
@@ -77,6 +82,20 @@ async function updateConfig(update: Config): Promise<void> {
   });
 }
 
+async function updateConfigFn(fn: (config: Config) => Config): Promise<void> {
+  const filePath = getConfigFilePath();
+  await configFileMutex.locked(async () => {
+    let config: Config = {};
+    try {
+      config = JSON.parse((await fs.readFile(filePath)).toString("utf-8"));
+      config = fn(config);
+    } catch (e) {
+      console.error(e);
+    }
+    await fs.writeFile(filePath, JSON.stringify(config, null, 2));
+  });
+}
+
 export async function getHomeAddress(): Promise<string> {
   return (await readConfig()).homeAddress || DEFAULT_HOME_ADDRESS;
 }
@@ -132,4 +151,51 @@ export async function getNetworkId(): Promise<number> {
 
 export async function saveNetworkId(networkId: number): Promise<void> {
   await updateConfig({ networkId });
+}
+
+function findNetwork(
+  chainId: number,
+  networks: NetworkList,
+): NetworkDescriptor | null {
+  for (const name in networks) {
+    if (Object.prototype.hasOwnProperty.call(networks, name)) {
+      const network = networks[name];
+      if (network.chainId === chainId) {
+        return network;
+      }
+    }
+  }
+  return null;
+}
+
+export async function getNodeList(): Promise<NodeList> {
+  const config = await readConfig();
+  const id = config.networkId ?? DEFAULT_NETWORK_ID;
+  let nodes: NodeList | null = null;
+  if (config.networkList) {
+    nodes = findNetwork(id, config.networkList)?.nodes ?? null;
+  }
+  if (!nodes) {
+    nodes = findNetwork(id, DEFAULT_NETWORK_LIST)?.nodes ?? null;
+  }
+  return nodes || [];
+}
+
+export async function saveNodeList(nodes: NodeList): Promise<void> {
+  await updateConfigFn((config: Config) => {
+    const id = config.networkId ?? DEFAULT_NETWORK_ID;
+    if (!config.networkList) {
+      config.networkList = {};
+    }
+    const network = findNetwork(id, config.networkList);
+    if (network) {
+      network.nodes = nodes;
+    } else {
+      config.networkList[id] = {
+        chainId: id,
+        nodes,
+      };
+    }
+    return config;
+  });
 }

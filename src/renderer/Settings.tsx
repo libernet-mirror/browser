@@ -57,6 +57,9 @@ const InputField = ({
         }}
         onChange={({ target: { value } }) => setValue(value)}
         onBlur={async ({ target }) => {
+          if (target.value === previousValue) {
+            return;
+          }
           let value;
           try {
             value = await updateValue(target.value);
@@ -65,11 +68,7 @@ const InputField = ({
             return;
           }
           setValue(value);
-          if (value !== previousValue) {
-            setValidation("");
-          } else {
-            setValidation(null);
-          }
+          setValidation("");
         }}
       />
     </label>
@@ -100,7 +99,13 @@ const GeneralSettings = () => {
   );
 };
 
-const NetworkIdField = () => (
+const NetworkIdField = ({
+  onChanging,
+  onChanged,
+}: {
+  onChanging: () => void;
+  onChanged: (newId: number) => void;
+}) => (
   <InputField
     description="Network ID"
     fetchValue={async () => "" + (await libernet().getNetworkId())}
@@ -109,13 +114,16 @@ const NetworkIdField = () => (
         throw new Error("invalid network ID");
       }
       const value = parseInt(networkId, 10);
+      onChanging();
       await libernet().setNetworkId(value);
+      onChanged(value);
       return "" + value;
     }}
   />
 );
 
 const NetworkSettings = () => {
+  const [networkId, setNetworkId] = useState<number | null>(null);
   const [addresses, setAddresses] = useState<string[]>([]);
   const [text, setText] = useState<string | null>(null);
 
@@ -123,25 +131,35 @@ const NetworkSettings = () => {
   const [saving, setSaving] = useState(false);
 
   useAsyncEffect(async () => {
-    setAddresses(await libernet().getNodeList());
+    setNetworkId(await libernet().getNetworkId());
   }, []);
+
+  useAsyncEffect(async () => {
+    setAddresses(await libernet().getNodeList(networkId));
+    setText(null);
+    setDirty(false);
+  }, [networkId]);
 
   return (
     <>
       <PageTitle>Network Settings</PageTitle>
       <form
         className="mt-2 flex flex-col gap-2"
-        onSubmit={async () => {
+        onSubmit={async (e) => {
+          e.preventDefault();
           setSaving(true);
           try {
-            await libernet().setNodeList(addresses);
+            await libernet().setNodeList(networkId, addresses);
           } finally {
             setDirty(false);
             setSaving(false);
           }
         }}
       >
-        <NetworkIdField />
+        <NetworkIdField
+          onChanging={() => setAddresses([])}
+          onChanged={(newId: number) => setNetworkId(newId)}
+        />
         <label>
           Enter the list of known Libernet nodes, one per line.
           <TextArea
@@ -155,15 +173,17 @@ const NetworkSettings = () => {
             onFocus={() => setText(addresses.join("\n"))}
             onChange={({ target }) => setText(target.value)}
             onBlur={() => {
-              setAddresses(
-                (text ?? "")
-                  .split("\n")
-                  .map((address) => address.trim())
-                  .filter((address) => !!address)
-                  .sort(),
-              );
-              setText(null);
-              setDirty(true);
+              if (text !== null) {
+                setAddresses(
+                  text
+                    .split("\n")
+                    .map((address) => address.trim())
+                    .filter((address) => !!address)
+                    .sort(),
+                );
+                setText(null);
+                setDirty(true);
+              }
             }}
           />
         </label>

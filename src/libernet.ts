@@ -34,7 +34,7 @@ import type {
   _libernet_Transaction_Payload as TransactionPayloadProto,
 } from "./proto/libernet/Transaction";
 
-import { getNetworkId } from "./config";
+import { getNetworkId, getNodeList, saveNodeList } from "./config";
 import { PROTOCOL_VERSION } from "./constants";
 import {
   createBinaryMerkleProof32,
@@ -76,8 +76,6 @@ import {
 } from "./utilities";
 import { Wallet } from "./wallet";
 
-export const DEFAULT_BOOTSTRAP_NODE_ADDRESSES: string[] = ["localhost:4443"];
-
 const packageDefinition = loadPackageDefinition(libernetPackageDefinition)
   .libernet as GrpcObject;
 
@@ -110,8 +108,6 @@ class AccountWatcher {
 }
 
 export class Libernet {
-  private static _bootstrapNodes = DEFAULT_BOOTSTRAP_NODE_ADDRESSES;
-
   private static _socketCounter = 0;
 
   private readonly _client;
@@ -119,12 +115,28 @@ export class Libernet {
 
   private readonly _accountListeners = new Set<AccountListener>();
 
-  public static getBootstrapNodes(): string[] {
-    return Libernet._bootstrapNodes;
+  public static async getBootstrapNodes(): Promise<string[]> {
+    return (await getNodeList()).map(
+      ({ address, port }) => `${address}:${port}`,
+    );
   }
 
-  public static setBootstrapNodes(addresses: string[]): void {
-    Libernet._bootstrapNodes = addresses;
+  public static async setBootstrapNodes(addresses: string[]): Promise<void> {
+    await saveNodeList(
+      addresses
+        .map((address) => {
+          const match = address.match(/^([^:]*)(?::([0-9]+))?$/);
+          if (!match) {
+            console.error(`invalid node address: ${address}`);
+            return null;
+          }
+          return {
+            address: match[1],
+            port: parseInt(match[2] ?? "50051", 10),
+          };
+        })
+        .filter((address) => !!address),
+    );
   }
 
   private static _getUnixSocketPath(target: string): string {
@@ -219,10 +231,8 @@ export class Libernet {
   }
 
   public static async create(account: Account): Promise<Libernet> {
-    const target =
-      Libernet._bootstrapNodes[
-        Math.floor(Math.random() * Libernet._bootstrapNodes.length)
-      ];
+    const nodes = await Libernet.getBootstrapNodes();
+    const target = nodes[Math.floor(Math.random() * nodes.length)];
     const [networkId, proxy] = await Promise.all([
       getNetworkId(),
       Proxy.create(account, Libernet._getUnixSocketPath(target), target),
@@ -796,8 +806,8 @@ class LibernetManager {
   }
 }
 
-export function getBootstrapNodes(): string[] {
-  return Libernet.getBootstrapNodes();
+export async function getBootstrapNodes(): Promise<string[]> {
+  return await Libernet.getBootstrapNodes();
 }
 
 export async function setBootstrapNodes(addresses: string[]): Promise<void> {

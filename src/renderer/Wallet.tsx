@@ -291,6 +291,7 @@ const TransactionList = ({
           ) : transactions.length > 0 ? (
             transactions.map((transaction) => (
               <TransactionRow
+                key={transaction.hash}
                 accountAddress={accountAddress}
                 transaction={transaction}
               />

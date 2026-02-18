@@ -38,8 +38,8 @@ export interface LibernetAPI {
   openMainMenu(): void;
   getNetworkId(): Promise<number>;
   setNetworkId(id: number): Promise<void>;
-  getNodeList(): Promise<string[]>;
-  setNodeList(nodes: string[]): Promise<void>;
+  getNodeList(networkId: number): Promise<string[]>;
+  setNodeList(networkId: number, nodes: string[]): Promise<void>;
   getWalletStatus(): Promise<"none" | "stored" | "loaded">;
   createWallet(passwords: string[]): Promise<boolean>;
   loadWallet(password: string, accountIndex: number): Promise<boolean>;

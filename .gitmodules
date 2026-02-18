@@ -4,3 +4,6 @@
 [submodule "proto"]
 	path = proto
 	url = https://github.com/libernet-mirror/proto.git
+[submodule "bootstrap"]
+	path = bootstrap
+	url = https://github.com/libernet-mirror/bootstrap.git
