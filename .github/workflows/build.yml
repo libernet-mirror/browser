@@ -117,5 +117,5 @@ jobs:
           files: |
             out/make/**
             LICENSE
-          overwrite_files: false
+          overwrite_files: true
           make_latest: true
