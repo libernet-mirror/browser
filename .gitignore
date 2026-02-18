@@ -93,3 +93,6 @@ out/
 
 /crypto/target/
 /crypto-bindings/
+
+# The `release` directory is used by GitHub Actions to build the release artifacts.
+/release/

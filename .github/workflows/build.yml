@@ -108,18 +108,18 @@ jobs:
           VERSION=${{ github.ref_name }}
           case "${{ matrix.os }}-${{ matrix.arch }}" in
             linux-x64)
-              mv out/make/**/*.deb libernet-browser-${VERSION}-linux-x64.deb || true
-              mv out/make/**/*.rpm libernet-browser-${VERSION}-linux-x64.rpm || true
+              mv out/make/**/*.deb release/libernet-browser-${VERSION}-linux-x64.deb || true
+              mv out/make/**/*.rpm release/libernet-browser-${VERSION}-linux-x64.rpm || true
               ;;
             linux-arm64)
-              mv out/make/**/*.deb libernet-browser-${VERSION}-linux-arm64.deb || true
-              mv out/make/**/*.rpm libernet-browser-${VERSION}-linux-arm64.rpm || true
+              mv out/make/**/*.deb release/libernet-browser-${VERSION}-linux-arm64.deb || true
+              mv out/make/**/*.rpm release/libernet-browser-${VERSION}-linux-arm64.rpm || true
               ;;
             macos-x64)
-              mv out/make/**/*.zip libernet-browser-${VERSION}-macos-x64.zip || true
+              mv out/make/**/*.zip release/libernet-browser-${VERSION}-macos-x64.zip || true
               ;;
             macos-arm64)
-              mv out/make/**/*.zip libernet-browser-${VERSION}-macos-arm64.zip || true
+              mv out/make/**/*.zip release/libernet-browser-${VERSION}-macos-arm64.zip || true
               ;;
           esac
 
@@ -131,19 +131,19 @@ jobs:
 
           $exe = Get-ChildItem -Recurse -Filter *.exe | Where-Object { $_.FullName -like "*out\make*" }
           if ($exe) {
-            Rename-Item $exe.FullName "libernet-$version-windows-x64.exe"
+            Rename-Item $exe.FullName "release\libernet-$version-windows-x64.exe"
           }
 
           $nupkg = Get-ChildItem -Recurse -Filter *.nupkg | Where-Object { $_.FullName -like "*out\make*" }
           if ($nupkg) {
-            Rename-Item $nupkg.FullName "libernet-$version-windows-x64.nupkg"
+            Rename-Item $nupkg.FullName "release\libernet-$version-windows-x64.nupkg"
           }
 
       - name: "Upload the build artifacts"
         uses: actions/upload-artifact@v4
         with:
           name: libernet-browser-${{ github.ref_name }}-${{ matrix.os }}-${{ matrix.arch }}
-          path: out/make/**
+          path: release/*
           overwrite: true
 
       - name: "Create GitHub Release"
@@ -153,7 +153,7 @@ jobs:
           name: Release ${{ github.ref_name }}
           generate_release_notes: true
           files: |
-            out/make/**
+            release/*
             LICENSE
           overwrite_files: false
           make_latest: true
