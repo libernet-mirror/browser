@@ -3,6 +3,7 @@
 import type { Any as _google_protobuf_Any, Any__Output as _google_protobuf_Any__Output } from '../google/protobuf/Any';
 import type { Signature as _libernet_Signature, Signature__Output as _libernet_Signature__Output } from '../libernet/Signature';
 import type { Scalar as _libernet_Scalar, Scalar__Output as _libernet_Scalar__Output } from '../libernet/Scalar';
+import type { ProgramModule as _libernet_wasm_ProgramModule, ProgramModule__Output as _libernet_wasm_ProgramModule__Output } from '../libernet/wasm/ProgramModule';
 import type { Long } from '@grpc/proto-loader';
 
 export interface _libernet_Transaction_BlockReward {
@@ -16,11 +17,11 @@ export interface _libernet_Transaction_BlockReward__Output {
 }
 
 export interface _libernet_Transaction_CreateProgram {
-  'bytecode'?: (Buffer | Uint8Array | string);
+  'programModule'?: (_libernet_wasm_ProgramModule | null);
 }
 
 export interface _libernet_Transaction_CreateProgram__Output {
-  'bytecode'?: (Buffer);
+  'programModule'?: (_libernet_wasm_ProgramModule__Output);
 }
 
 export interface _libernet_Transaction_Payload {
