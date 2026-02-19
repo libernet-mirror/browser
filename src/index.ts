@@ -5,6 +5,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import { app, BrowserWindow as ElectronBrowserWindow, ipcMain } from "electron";
+import { updateElectronApp } from "update-electron-app";
 
 import {
   getHomeAddress,
@@ -33,6 +34,9 @@ console.log(`LiberBrowser v${app.getVersion()}`);
 if (require("electron-squirrel-startup")) {
   app.quit();
 }
+
+// Handle automatic updates.
+updateElectronApp();
 
 // This method will be called when Electron has finished initialization and is ready to create
 // browser windows. Some APIs can only be used after this event occurs.
