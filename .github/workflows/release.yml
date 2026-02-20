@@ -16,20 +16,20 @@ jobs:
           # For the available architectures see
           # https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#standard-github-hosted-runners-for-public-repositories
 
-          # - os: linux
-          #   arch: x64
-          #   runner: ubuntu-latest
-          # - os: linux
-          #   arch: arm64
-          #   runner: ubuntu-24.04-arm
+          - os: linux
+            arch: x64
+            runner: ubuntu-latest
+          - os: linux
+            arch: arm64
+            runner: ubuntu-24.04-arm
 
-          # - os: windows
-          #   arch: x64
-          #   runner: windows-latest
+          - os: windows
+            arch: x64
+            runner: windows-latest
 
-          # - os: macos
-          #   arch: x64
-          #   runner: macos-15-intel
+          - os: macos
+            arch: x64
+            runner: macos-15-intel
           - os: macos
             arch: arm64
             runner: macos-15
@@ -81,9 +81,9 @@ jobs:
       - name: "Install Node dependencies"
         run: npm ci
 
-      # - name: "Test the crypto submodule"
-      #   working-directory: crypto
-      #   run: cargo test --release
+      - name: "Test the crypto submodule"
+        working-directory: crypto
+        run: cargo test --release
 
       - name: "Build the crypto submodule"
         working-directory: crypto
