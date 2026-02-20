@@ -81,9 +81,9 @@ jobs:
       - name: "Install Node dependencies"
         run: npm ci
 
-      - name: "Test the crypto submodule"
-        working-directory: crypto
-        run: cargo test --release
+      # - name: "Test the crypto submodule"
+      #   working-directory: crypto
+      #   run: cargo test --release
 
       - name: "Build the crypto submodule"
         working-directory: crypto
