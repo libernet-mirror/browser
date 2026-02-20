@@ -126,6 +126,10 @@ jobs:
         run: security find-identity -v -p codesigning
 
       - name: "Package the Electron app"
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: npm run package
 
       - name: "Make the Electron distributables"
