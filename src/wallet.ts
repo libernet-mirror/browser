@@ -37,7 +37,10 @@ export class Wallet {
   private constructor(
     private readonly _inner: NativeWallet,
     private readonly _password: string,
-  ) {}
+  ) {
+    // Load the first account to make sure the password is valid.
+    this.getAccountByNumber(0);
+  }
 
   public static isLoaded(): boolean {
     return !!Wallet._instance;
