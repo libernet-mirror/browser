@@ -35,7 +35,11 @@ import type {
 } from "./proto/libernet/Transaction";
 
 import { getNetworkId, getNodeList, saveNodeList } from "./config";
-import { PROTOCOL_VERSION } from "./constants";
+import {
+  BLOCK_REWARD_TRANSACTION_DST,
+  PROTOCOL_VERSION,
+  SEND_COINS_TRANSACTION_DST,
+} from "./constants";
 import {
   createBinaryMerkleProof32,
   createRemoteAccount,
@@ -414,6 +418,7 @@ export class Libernet {
           const recipient = decodeScalar(content.blockReward.recipient);
           const amount = decodeScalar(content.blockReward.amount);
           transactionHash = await poseidonHashT3([
+            BLOCK_REWARD_TRANSACTION_DST,
             signerAddress,
             toScalar(chainId),
             toScalar(nonce),
@@ -434,6 +439,7 @@ export class Libernet {
           const recipient = decodeScalar(content.sendCoins.recipient);
           const amount = decodeScalar(content.sendCoins.amount);
           transactionHash = await poseidonHashT3([
+            SEND_COINS_TRANSACTION_DST,
             signerAddress,
             toScalar(chainId),
             toScalar(nonce),
