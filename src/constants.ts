@@ -26,4 +26,9 @@ export const DNS_PREFIX_PATTERN = /^[_a-z0-9-]+(?:\.[_a-z0-9-]+)*(?:\/|$)/i;
 export const DNS_HEURISTIC_PREFIX_PATTERN =
   /^(?:localhost|(?:[_a-z0-9-]+(?:\.[_a-z0-9-]+)+))(?:\/|$)/i;
 
-export const PROTOCOL_VERSION = new ProtocolVersion(0, 1, 0);
+export const PROTOCOL_VERSION = new ProtocolVersion(0, 2, 0);
+
+export const BLOCK_REWARD_TRANSACTION_DST =
+  "0x2354fbdbabaab2075cbefe832071e7b85297d3dd4a9ba7074bb3487ed5e3651f";
+export const SEND_COINS_TRANSACTION_DST =
+  "0x42e713a7bd50ea9400810b63ffd6f04860196513b2cf9ec3608411c2c38f059b";
